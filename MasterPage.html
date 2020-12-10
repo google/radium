@@ -1,0 +1,617 @@
+<!--
+Copyright 2020 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!-- Custom client-side JavaScript code. -->
+<!DOCTYPE html>
+<script>
+  let googleScriptRun = google.script.run
+    .withFailureHandler((error) => alert(`Error occured: ${error.message}`));
+
+  const projectParameters = {
+    mapCenter: { lat: 51.5755855, lng: 7.643094500000004 },
+    customRadius: 5,
+    colors: {
+      lightGray: "#aaa",
+      red: "#f00",
+      green: "#0f0"
+    },
+    unwantedString: "BOMSquare",
+    fileSuffix: "-calculated.csv",
+    polygon: {
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillOpacity: 0.35
+    },
+    circle: {
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillOpacity: 0.35,
+    },
+  };
+
+  let globalUnionPolygonArea;
+  let globalSquareCoords;
+  let globalCenter = projectParameters.mapCenter;
+  let globalMap;
+  let globalBusinessSize;
+  let globalRectangle;
+  let globalSmallCircle;
+  let globalLargeCircle;
+  let globalCustomRadius = projectParameters.customRadius;
+  let globalPolygonsMap;
+  let globalCustomCircle;
+  let filename = "";
+
+  function initMap() {
+    globalMap = new google.maps.Map(document.getElementById('map'), {
+      zoom: 10,
+      center: projectParameters.mapCenter,
+      mapTypeId: google.maps.MapTypeId.TERRAIN,
+    });
+    googleScriptRun.withSuccessHandler(initMap);
+  }
+
+  function updateUI(polygon) {
+    setUpGlobalVariables(polygon);
+    calculateCustomFields(radius = projectParameters.customRadius);
+    updateCheckboxes();
+    updateInnerHTML();
+  }
+
+  function setUpGlobalVariables(polygon) {
+    globalUnionPolygonArea = getPolygonAreaFromJtst(globalMap, polygon);
+    globalSquareCoords = getSquareCoords(getPolygonPoints(globalUnionPolygonArea));
+    globalCenter = getCenter(globalSquareCoords);
+    globalMap.setCenter(globalCenter);
+    globalBusinessSize = getPolygonSize(globalUnionPolygonArea);
+  }
+
+  function updateInnerHTML() {
+    updateGlobalBusinessInnerHTML();
+    updateLargeCircleInnerHTML(globalUnionPolygonArea);
+    updateSmallCircleInnerHTML(globalUnionPolygonArea);
+  }
+
+  function updateGlobalBusinessInnerHTML() {
+    const businessCenter = getCenter(globalSquareCoords);
+    document.getElementById('text_under_map_business').innerHTML = globalBusinessSize.toFixed(2);
+    document.getElementById('circle_center_coordinates').innerHTML =
+      `lat: ${businessCenter.lat}, lng: ${businessCenter.lng}`;
+  }
+
+  function updateLargeCircleInnerHTML(polygonArea) {
+    const largeRadius = getLargeRadius(globalSquareCoords);
+    const largeCenter = getCenter(globalSquareCoords);
+    const largeCircleCoords = convertCircleToPolygon(largeCenter, largeRadius, 360 * 2);
+    const largeCircleArea = getPolygonArea(largeCircleCoords,
+      projectParameters.colors.lightGray,
+      projectParameters.colors.lightGray
+    );
+    const largeCircleSize = getIntersectionSize(largeCircleArea, largeCircleArea);
+    const largeIntersectionPercent =
+      (100 * getIntersectionSize(polygonArea, largeCircleArea) / globalBusinessSize).toFixed(2);
+    const largeWasteSize = largeCircleSize - getIntersectionSize(polygonArea, largeCircleArea);
+    const largeWastePercent = (100 * largeWasteSize / globalBusinessSize).toFixed(2);
+
+    document.getElementById('text_under_map_large_radius').innerHTML =
+      largeRadius.toFixed(2);
+    document.getElementById('text_under_map_large_size').innerHTML =
+      largeCircleSize.toFixed(2);
+    document.getElementById('text_under_map_large').innerHTML =
+      getIntersectionSize(polygonArea, largeCircleArea).toFixed(2);
+    document.getElementById('text_under_map_large_percent').innerHTML =
+      `(${largeIntersectionPercent}%)`;
+    document.getElementById('text_under_map_large_waste').innerHTML =
+      largeWasteSize.toFixed(2);
+    document.getElementById('text_under_map_large_waste_percent').innerHTML =
+      `(${largeWastePercent}%)`;
+    document.getElementById('text_under_map_large_score').innerHTML =
+      largeIntersectionPercent - largeWastePercent;
+  }
+
+  function updateSmallCircleInnerHTML(polygonArea) {
+    const smallRadius = getSmallRadius(globalSquareCoords);
+    const smallCenter = getCenter(globalSquareCoords);
+    const smallCircleCoords = convertCircleToPolygon(smallCenter, smallRadius, 360);
+    const smallCircleArea = getPolygonArea(smallCircleCoords,
+      projectParameters.colors.lightGray,
+      projectParameters.colors.lightGray
+    );
+    const smallCircleSize = getIntersectionSize(smallCircleArea, smallCircleArea);
+    const smallIntersectionPercent =
+      (100 * getIntersectionSize(polygonArea, smallCircleArea) / globalBusinessSize).toFixed(2);
+    const smallWasteSize = smallCircleSize - getIntersectionSize(polygonArea, smallCircleArea);
+    const smallWastePercent = (100 * smallWasteSize / globalBusinessSize).toFixed(2);
+
+    document.getElementById('text_under_map_small_size').innerHTML =
+      smallCircleSize.toFixed(2);
+    document.getElementById('text_under_map_small_radius').innerHTML =
+      smallRadius.toFixed(2);
+    document.getElementById('text_under_map_small').innerHTML =
+      getIntersectionSize(polygonArea, smallCircleArea).toFixed(2);
+    document.getElementById('text_under_map_small_percent').innerHTML =
+      `(${smallIntersectionPercent}%)`;
+    document.getElementById('text_under_map_small_waste').innerHTML =
+      smallWasteSize.toFixed(2);
+    document.getElementById('text_under_map_small_waste_percent').innerHTML =
+      `(${smallWastePercent}%)`;
+    document.getElementById('text_under_map_small_score').innerHTML =
+      smallIntersectionPercent - smallWastePercent;
+  }
+
+  /* Select aka dropdown */
+  function addMenuListItems(codenames) {
+    const cityListSelect = document.getElementById('city-list-select');
+    for (const codename of codenames) {
+      let option = document.createElement('option');
+      option.text = codename;
+      cityListSelect.add(option);
+    }
+  }
+
+  function updatedSelectedOptions(codename) {
+    updateUI(unionOfPolygons(globalPolygonsMap.get(codename)));
+  }
+
+  /* Dialogs */
+
+  const dialogUpload = document.querySelector('#dialog-upload');
+  const showDialogButtonUpload = document.querySelector('#show-dialog-upload');
+
+  if (!dialogUpload.showModal) {
+    dialogPolyfill.registerDialog(dialogUpload); // where's dialogPolyfil defined?
+  }
+  showDialogButtonUpload.addEventListener('click', function () {
+    dialogUpload.showModal();
+  });
+
+  dialogUpload.querySelector('.close').addEventListener('click', () => { closeDialog(); });
+
+  document.getElementById('uploadKmlBtn').addEventListener('click', () => {
+    document.getElementById('uploadKmlBtn').disabled = true;
+    document.getElementById('upload-spinner').classList.add('is-active');
+
+    const filesUploaded = document.getElementById('kmlFileUploadBtn');
+    for (const file of filesUploaded.files) {
+      filename = file.name;
+      let reader = new FileReader();
+      reader.readAsText(file, 'UTF-8');
+      reader.onload = function (evt) {
+        const xml = evt.target.result;
+        googleScriptRun
+          .withSuccessHandler(parseContentJsonObject).parseXml(xml)
+          .withFailureHandler((error) => alert(`Error occured: ${error.message}`));;
+      }
+    }
+  });
+
+  function parseContentJsonObject(object) {
+    const polygonsMap = mapPolygonsToNameAndCoordinates(object);
+    closeDialog();
+    drawAllPolygons(polygonsMap);
+    addMenuListItems(polygonsMap.keys());
+    globalPolygonsMap = polygonsMap;
+    const unionPolygon = unionOfPolygons(polygonsMap.values().next().value);
+    updateUI(unionPolygon);
+    createCsvFileAndDownload(filename, object);
+  }
+
+  function mapPolygonsToNameAndCoordinates(object) {
+    const placemarks = object.kml.Document.Folder.Placemark;
+    removeUnwantedPlacemarks(placemarks, projectParameters.unwantedString);
+    const resultMap = new Map(placemarks.map(placemark =>
+      [placemark.name.Text.substring(0, 3), []]));
+    placemarks.map(
+      placemark => (resultMap.get(placemark.name.Text.substring(0, 3)))
+        .push(getPolygonArea(parseCoordsToLatLng(
+          placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.Text),
+          projectParameters.colors.red,
+          projectParameters.colors.red
+        )));
+    return resultMap;
+  }
+
+  function removeUnwantedPlacemarks(placemarks, name) {
+    const namesPlacemarks = placemarks.map(placemark => placemark.name.Text);
+    const index = namesPlacemarks.indexOf(name);
+    if (index > -1) {
+      placemarks.splice(index, 1);
+    }
+  }
+
+  function parseCoordsToLatLng(coords) {
+    const latLngCoords = [];
+    const coordsSplit = coords.split(',0');
+    for (let j = 0; j < coordsSplit.length - 1; j++) {
+      const [lng, lat] = coordsSplit[j].split(",");
+      latLngCoords.push({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    }
+    return latLngCoords;
+  }
+
+  function closeDialog() {
+    let dialog = document.querySelector('#dialog-upload');
+    document.getElementById('upload-spinner').classList.remove('is-active');
+    dialog.close();
+  }
+
+  function drawAllPolygons(polygonsMap) {
+    let polygon;
+    for (const codename of polygonsMap.keys()) {
+      polygon = unionOfPolygons(polygonsMap.get(codename));
+      drawPolygon(getJtstCoords(polygon), projectParameters.colors.red, globalMap);
+    }
+  }
+
+  // Merge multiple polygons into one
+  function unionOfPolygons(polygonAreas) {
+    const geometryFactory = new jsts.geom.GeometryFactory();
+    let unionPolygon = createJstsPolygon(geometryFactory, polygonAreas[0]);
+    for (let i = 1; i < polygonAreas.length; i++) {
+      let jstsPolygon = createJstsPolygon(geometryFactory, polygonAreas[i]);
+      unionPolygon = unionPolygon.union(jstsPolygon);
+    }
+    return unionPolygon;
+  };
+
+  function getPolygonAreaFromJtst(map, jtstPolygon) {
+    const coords = jtstPolygon.getCoordinates().map((coord) => {
+      return { lat: coord.x, lng: coord.y };
+    });
+    return getPolygonArea(coords, projectParameters.colors.green, map);
+  }
+
+  function getJtstCoords(jtstPolygon) {
+    const coords = jtstPolygon.getCoordinates().map((coord) => {
+      return { lat: coord.x, lng: coord.y };
+    });
+    return coords;
+  }
+
+
+  // Slider
+  function calculateCustomFields(radius) {
+    globalCustomRadius = radius;
+    let degrees = 360;
+    if (radius > 5) {
+      degrees = degrees * 2;
+    }
+    updateCustomInnerHTML(globalUnionPolygonArea, radius, degrees);
+    updateCustomCircleCheckbox();
+  }
+
+  function updateCustomInnerHTML(polygonArea, radius, degrees) {
+    const customCircleCoords = convertCircleToPolygon(globalCenter, radius * 1000, degrees * 2);
+    const customCircleArea = getPolygonArea(customCircleCoords,
+      projectParameters.colors.lightGray,
+      projectParameters.colors.lightGray
+    );
+    const customCircleSize = getIntersectionSize(customCircleArea, customCircleArea);
+
+    const intersectionSize = Math.abs(getIntersectionSize(polygonArea, customCircleArea));
+    const customIntersectionPercent = (100 * intersectionSize / globalBusinessSize).toFixed(2);
+    const customWasteSize = customCircleSize - intersectionSize;
+    const customWastePercent = (100 * customWasteSize / globalBusinessSize).toFixed(2);
+
+    document.getElementById('radius').innerHTML = radius;
+    document.getElementById('text_under_map_custom_size').innerHTML =
+      customCircleSize.toFixed(2);
+    document.getElementById('text_under_map_custom').innerHTML =
+      intersectionSize.toFixed(2);
+    document.getElementById('text_under_map_custom_waste').innerHTML =
+      (customCircleSize - intersectionSize).toFixed(2);
+    document.getElementById('text_under_map_custom_percent').innerHTML =
+      `(${customIntersectionPercent}%)`;
+    document.getElementById('text_under_map_custom_waste_percent').innerHTML =
+      `(${customWastePercent}%)`;
+    document.getElementById('text_under_map_custom_score').innerHTML =
+      customIntersectionPercent - customWastePercent;
+  }
+
+  // Checkboxes
+
+  function updateCheckboxes() {
+    updateCustomCircleCheckbox();
+    updateRectanlgeCheckbox();
+    updateSmallCircleCheckbox();
+    updateLargeCircleCheckbox();
+  }
+
+  function updateRectanlgeCheckbox() {
+    const myCheckbox = document.getElementById('rectangleCheckbox');
+    safeRemoveRectangle(globalRectangle);
+    if (myCheckbox.checked) {
+      globalRectangle = drawPolygon(globalSquareCoords, projectParameters.color.lightGray, globalMap);
+    }
+  }
+
+  function updateSmallCircleCheckbox() {
+    const myCheckbox = document.getElementById('smallCheckbox');
+    safeRemoveCircle(globalSmallCircle);
+    if (myCheckbox.checked) {
+      globalSmallCircle = drawSmallCircle(globalSquareCoords, projectParameters.color.lightGray, globalMap);
+    }
+  }
+
+  function updateLargeCircleCheckbox() {
+    const myCheckbox = document.getElementById('largeCheckbox');
+    safeRemoveCircle(globalLargeCircle);
+    if (myCheckbox.checked) {
+      globalLargeCircle = drawLargeCircle(globalSquareCoords, projectParameters.color.lightGray, globalMap);
+    }
+  }
+
+  function updateCustomCircleCheckbox() {
+    const myCheckbox = document.getElementById('customCheckbox');
+    safeRemoveCircle(globalCustomCircle);
+    if (myCheckbox.checked) {
+      globalCustomCircle =
+        drawCircle(getCenter(globalSquareCoords), globalCustomRadius * 1000, projectParameters.color.lightGray, globalMap);
+    }
+  }
+
+  function safeRemoveCircle(globalCircleShape) {
+    if (globalCircleShape !== undefined) {
+      globalCircleShape = removeCircle(globalCircleShape);
+    }
+  }
+
+  function safeRemoveRectangle(globalRectangleShape) {
+    if (globalRectangleShape !== undefined) {
+      globalRectangleShape = removePolygon(globalRectangleShape);
+    }
+  }
+
+  // Intersection & Polygon
+  function getIntersectionSize(polygonAreaA, polygonAreaB) {
+    const intersection = getIntersection(polygonAreaA, polygonAreaB);
+    const intersectionPoints = convertToPoints(intersection);
+    return 10000 * d3.polygonArea(intersectionPoints);
+  }
+
+  function getIntersection(polygonAreaA, polygonAreaB) {
+    const geometryFactory = new jsts.geom.GeometryFactory();
+    const jstsPolygonA = createJstsPolygon(geometryFactory, polygonAreaA);
+    const jstsPolygonB = createJstsPolygon(geometryFactory, polygonAreaB);
+    return jstsPolygonA.intersection(jstsPolygonB);
+  }
+
+  function createJstsPolygon(geometryFactory, polygon) {
+    const path = polygon.getPath();
+    const coordinates = path.getArray().map((coord) => {
+      return new jsts.geom.Coordinate(coord.lat(), coord.lng());
+    });
+    coordinates.push(coordinates[0]);
+    const shell = geometryFactory.createLinearRing(coordinates);
+    return geometryFactory.createPolygon(shell);
+  }
+
+  function convertToPoints(polygon) {
+    const coords = polygon.getCoordinates().map((coord) => {
+      return [coord.x + 90, coord.y + 180];
+    });
+    return coords;
+  }
+
+  function drawPolygon(coordArray, color, map) {
+    const polygonArea = getPolygonArea(coordArray, color, color);
+    polygonArea.setMap(map);
+    return polygonArea;
+  }
+
+  function getPolygonArea(paths, strokeColor, fillColor) {
+    const polygonArea = new google.maps.Polygon({
+      paths,
+      strokeColor,
+      strokeOpacity: projectParameters.polygon.strokeOpacity,
+      strokeWeight: projectParameters.polygon.strokeWeight,
+      fillColor,
+      fillOpacity: projectParameters.polygon.fillOpacity
+    });
+    return polygonArea;
+  }
+
+  function getPolygonSize(polygonArea) {
+    const points = getPolygonPoints(polygonArea);
+    const areaSize = 10000 * d3.polygonArea(points);
+    return areaSize;
+  }
+
+  function getPolygonPoints(polygonArea) {
+    const geometryFactory = new jsts.geom.GeometryFactory();
+    const jstsPolygon = createJstsPolygon(geometryFactory, polygonArea);
+    const points = convertToPoints(jstsPolygon);
+    return points;
+  }
+
+  function removePolygon(polygonArea) {
+    polygonArea.setMap(null);
+    return polygonArea;
+  }
+
+  //square
+  function getSquareCoords(points) {
+    let minLat = points[0][0];
+    let minLng = points[0][1];
+    let maxLat = points[0][0];
+    let maxLng = points[0][1];
+
+    for (let i = 1; i < points.length; i++) {
+      minLat = Math.min(minLat, points[i][0]);
+      maxLat = Math.max(maxLat, points[i][0]);
+      minLng = Math.min(minLng, points[i][1]);
+      maxLng = Math.max(maxLng, points[i][1]);
+    }
+    const squareCoords = [
+      { lat: minLat - 90, lng: maxLng - 180 }, // 1
+      { lat: maxLat - 90, lng: maxLng - 180 }, // 2 or NE
+      { lat: maxLat - 90, lng: minLng - 180 }, // 3
+      { lat: minLat - 90, lng: minLng - 180 }  // 4 or SW
+    ];
+    return squareCoords;
+  }
+
+  // Circles
+  function drawLargeCircle(coords, color, map) {
+    return drawCircle(getCenter(coords), getLargeRadius(coords), color, map);
+  }
+
+  function drawSmallCircle(coords, color, map) {
+    return drawCircle(getCenter(coords), getSmallRadius(coords), color, map);
+  }
+
+  function drawCircle(center, radius, color, map) {
+    const circle = new google.maps.Circle({
+      strokeColor: color,
+      strokeOpacity: projectParameters.circle.strokeOpacity,
+      strokeWeight: projectParameters.circle.strokeWeight,
+      fillColor: color,
+      fillOpacity: projectParameters.circle.fillOpacity,
+      map,
+      center,
+      radius,
+    });
+    return circle;
+  }
+
+  function removeCircle(circle) {
+    circle.setMap(null);
+    return circle;
+  }
+
+  function getCenter(squareCoords) {
+    const centerLat = (squareCoords[1].lat + squareCoords[3].lat) / 2;
+    const centerLng = (squareCoords[1].lng + squareCoords[3].lng) / 2
+    const center = { lat: centerLat, lng: centerLng };
+    return center;
+  }
+
+  function getLargeRadius(squareCoords) {
+    const circleCenter = getCenter(squareCoords);
+    const squarePoint = new google.maps.LatLng(squareCoords[0].lat, squareCoords[0].lng);
+    const circlePoint = new google.maps.LatLng(circleCenter.lat, circleCenter.lng);
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(squarePoint,
+      circlePoint);
+    return distance;
+  }
+
+  function getSmallRadius(squareCoords) {
+    const circleCenter = getCenter(squareCoords);
+    const squarePoint = new google.maps.LatLng(circleCenter.lat, squareCoords[0].lng);
+    const circlePoint = new google.maps.LatLng(circleCenter.lat, circleCenter.lng);
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(squarePoint,
+      circlePoint);
+    return distance;
+  }
+
+  function convertCircleToPolygon(center, radius, num) {
+    const points = [];
+    const degreeStep = 360 / num;
+
+    for (let i = 0; i < num; i++) {
+      const gpos = google.maps.geometry.spherical.computeOffset(
+        new google.maps.LatLng(center), radius, degreeStep * i);
+      points.push({ lat: gpos.lat(), lng: gpos.lng() });
+    };
+
+    points.push(points[0]);
+    return points;
+  }
+
+  function createCsvFileAndDownload(filename, object) {
+    const csvFileName = removeExtension(filename) + projectParameters.fileSuffix;
+    const csvLines = createCsvContent(mapPolygonsToNameAndCoordinates(object));
+    const csvContent = csvLines.join('\n');
+    createFileAndDownload(csvContent, csvFileName);
+  }
+
+  function createCsvContent(polygonsMap) {
+    const minRadius = 3;
+    const intersectionTreshold = 90;
+    const csvLines = [getCsvHeader()];
+    for (const codename of polygonsMap.keys()) {
+      const unionPolygonArea = getPolygonAreaFromJtst(globalMap,
+        unionOfPolygons(polygonsMap.get(codename)));
+      const center = getCenter(getSquareCoords(getPolygonPoints(unionPolygonArea)));
+      const polygonSize = getPolygonSize(unionPolygonArea);
+      const maxRadius = getLargeRadius(getSquareCoords(getPolygonPoints(unionPolygonArea))) / 1000;
+      let bestScore = 0;
+      let bestString;
+      let tresholdString;
+      let i = minRadius;
+      while (i < maxRadius) {
+        let circleArea = getPolygonArea(
+          convertCircleToPolygon(center, i * 1000, 360 * 2),
+          projectParameters.colors.lightGray,
+          projectParameters.colors.lightGray
+        );
+
+        let intersectionSize = getIntersectionSize(unionPolygonArea, circleArea);
+        let circleSize = getIntersectionSize(circleArea, circleArea);
+
+        let intersectionPercent = (100 * intersectionSize / polygonSize).toFixed(2);
+        let wastePercent = (100 * (circleSize - intersectionSize) / polygonSize).toFixed(2);
+
+        let currentScore = intersectionPercent - wastePercent;
+
+        if (currentScore > bestScore) {
+          bestScore = currentScore;
+          bestString = `${i}, ${intersectionPercent}, ${wastePercent}`;
+        }
+
+        if (intersectionPercent > intersectionTreshold) {
+          tresholdString = `${i}, ${intersectionPercent}, ${wastePercent}`;
+          break;
+        }
+        i = parseFloat((i + 0.1).toFixed(1));
+      }
+      csvLines.push(createCsvLine(codename, center, tresholdString, bestString));
+    }
+    return csvLines;
+  }
+
+  /* File Helpers */
+  function createFileAndDownload(fileText, filename) {
+    const element = document.createElement('a');
+    const blob = new Blob([fileText], { type: 'text/plain' });
+
+    element.setAttribute('href', window.URL.createObjectURL(blob));
+    element.setAttribute('download', filename);
+
+    element.dataset.downloadurl =
+      ['text/plain', element.download, element.href].join(':');
+    element.draggable = true;
+    element.classList.add('dragout');
+    element.click();
+  }
+
+  function createCsvLine(codename, center, tresholdString, bestString) {
+    return `${codename}, ${center.lat}, ${center.lng}, ${tresholdString}, ${bestString}`;
+  }
+
+  function getCsvHeader() {
+    return "Codename, lat, lng, " +
+      "treshold_radius, treshold_intersection, treshold_waste, " +
+      "best_radius, best_intersection, best_waste";
+  }
+
+  function removeExtension(filename) {
+    const filenameParts = filename.split('.');
+    filenameParts.pop();
+    return filenameParts.join('.');
+  }
+
+</script>
+<script src='https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing,geometry&callback=initMap&key=[INSERT-API-KEY]' async defer></script>
