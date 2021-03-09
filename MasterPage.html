@@ -333,7 +333,7 @@ limitations under the License.
     const myCheckbox = document.getElementById('rectangleCheckbox');
     safeRemoveRectangle(globalRectangle);
     if (myCheckbox.checked) {
-      globalRectangle = drawPolygon(globalSquareCoords, projectParameters.color.lightGray, globalMap);
+      globalRectangle = drawPolygon(globalSquareCoords, projectParameters.colors.lightGray, globalMap);
     }
   }
 
@@ -341,7 +341,7 @@ limitations under the License.
     const myCheckbox = document.getElementById('smallCheckbox');
     safeRemoveCircle(globalSmallCircle);
     if (myCheckbox.checked) {
-      globalSmallCircle = drawSmallCircle(globalSquareCoords, projectParameters.color.lightGray, globalMap);
+      globalSmallCircle = drawSmallCircle(globalSquareCoords, projectParameters.colors.lightGray, globalMap);
     }
   }
 
@@ -349,7 +349,7 @@ limitations under the License.
     const myCheckbox = document.getElementById('largeCheckbox');
     safeRemoveCircle(globalLargeCircle);
     if (myCheckbox.checked) {
-      globalLargeCircle = drawLargeCircle(globalSquareCoords, projectParameters.color.lightGray, globalMap);
+      globalLargeCircle = drawLargeCircle(globalSquareCoords, projectParameters.colors.lightGray, globalMap);
     }
   }
 
@@ -358,7 +358,7 @@ limitations under the License.
     safeRemoveCircle(globalCustomCircle);
     if (myCheckbox.checked) {
       globalCustomCircle =
-        drawCircle(getCenter(globalSquareCoords), globalCustomRadius * 1000, projectParameters.color.lightGray, globalMap);
+        drawCircle(getCenter(globalSquareCoords), globalCustomRadius * 1000, projectParameters.colors.lightGray, globalMap);
     }
   }
 
