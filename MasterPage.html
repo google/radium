@@ -25,19 +25,26 @@ limitations under the License.
     colors: {
       lightGray: "#aaa",
       red: "#f00",
-      green: "#0f0"
+      green: "#0f0",
     },
     unwantedString: "BOMSquare",
     fileSuffix: "-calculated.csv",
     polygon: {
       strokeOpacity: 0.8,
       strokeWeight: 2,
-      fillOpacity: 0.35
+      fillOpacity: 0.35,
     },
     circle: {
       strokeOpacity: 0.8,
       strokeWeight: 2,
       fillOpacity: 0.35,
+    },
+    csvConfig: {
+      accountId: "[Insert-your-account-id]",
+      campaignName: "[Insert-your-campaign-name]",
+      radiusUnit: "km", // km -> mi conversion is not yet supported
+      intersectionTreshold: 90,
+      minRadius: 3,
     },
   };
 
@@ -538,8 +545,8 @@ limitations under the License.
   }
 
   function createCsvContent(polygonsMap) {
-    const minRadius = 3;
-    const intersectionTreshold = 90;
+    const minRadius = projectParameters.csvConfig.minRadius;
+    const intersectionTreshold = projectParameters.csvConfig.intersectionTreshold;
     const csvLines = [getCsvHeader()];
     for (const codename of polygonsMap.keys()) {
       const unionPolygonArea = getPolygonAreaFromJtst(globalMap,
@@ -547,8 +554,6 @@ limitations under the License.
       const center = getCenter(getSquareCoords(getPolygonPoints(unionPolygonArea)));
       const polygonSize = getPolygonSize(unionPolygonArea);
       const maxRadius = getLargeRadius(getSquareCoords(getPolygonPoints(unionPolygonArea))) / 1000;
-      let bestScore = 0;
-      let bestString;
       let tresholdString;
       let i = minRadius;
       while (i < maxRadius) {
@@ -566,18 +571,17 @@ limitations under the License.
 
         let currentScore = intersectionPercent - wastePercent;
 
-        if (currentScore > bestScore) {
-          bestScore = currentScore;
-          bestString = `${i}, ${intersectionPercent}, ${wastePercent}`;
-        }
-
         if (intersectionPercent > intersectionTreshold) {
-          tresholdString = `${i}, ${intersectionPercent}, ${wastePercent}`;
+          tresholdString = `(${i}${projectParameters.radiusUnit}:${center.lat}:${center.lng}), ${i}, ${projectParameters.radiusUnit}`;
           break;
         }
         i = parseFloat((i + 0.1).toFixed(1));
       }
-      csvLines.push(createCsvLine(codename, center, tresholdString, bestString));
+
+      csvLines.push(createCsvLine(
+        projectParameters.csvConfig.accountId, 
+        projectParameters.csvConfig.campaignName,
+        tresholdString));
     }
     return csvLines;
   }
@@ -597,14 +601,12 @@ limitations under the License.
     element.click();
   }
 
-  function createCsvLine(codename, center, tresholdString, bestString) {
-    return `${codename}, ${center.lat}, ${center.lng}, ${tresholdString}, ${bestString}`;
+  function createCsvLine(accountId, campaignName, tresholdString) {
+    return `${accountId}, ${campaignName}, ${tresholdString}`;
   }
 
   function getCsvHeader() {
-    return "Codename, lat, lng, " +
-      "treshold_radius, treshold_intersection, treshold_waste, " +
-      "best_radius, best_intersection, best_waste";
+    return "Account ID, Campaign, Location, Radius, Unit";
   }
 
   function removeExtension(filename) {
