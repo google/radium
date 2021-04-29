@@ -60,6 +60,7 @@ limitations under the License.
   let globalPolygonsMap;
   let globalCustomCircle;
   let filename = "";
+  let globalJsonKMLMapObject = null;
 
   function initMap() {
     globalMap = new google.maps.Map(document.getElementById('map'), {
@@ -93,7 +94,7 @@ limitations under the License.
 
   function updateGlobalBusinessInnerHTML() {
     const businessCenter = getCenter(globalSquareCoords);
-    document.getElementById('text_under_map_business').innerHTML = globalBusinessSize.toFixed(2);
+    document.getElementById('text_under_map_business').innerHTML = globalBusinessSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('circle_center_coordinates').innerHTML =
       `lat: ${businessCenter.lat}, lng: ${businessCenter.lng}`;
   }
@@ -113,19 +114,19 @@ limitations under the License.
     const largeWastePercent = (100 * largeWasteSize / globalBusinessSize).toFixed(2);
 
     document.getElementById('text_under_map_large_radius').innerHTML =
-      largeRadius.toFixed(2);
+      `${(largeRadius/1000).toFixed(1)} km`;
     document.getElementById('text_under_map_large_size').innerHTML =
-      largeCircleSize.toFixed(2);
+      largeCircleSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_large').innerHTML =
-      getIntersectionSize(polygonArea, largeCircleArea).toFixed(2);
+      getIntersectionSize(polygonArea, largeCircleArea).toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_large_percent').innerHTML =
-      `(${largeIntersectionPercent}%)`;
+      `${largeIntersectionPercent}%`;
     document.getElementById('text_under_map_large_waste').innerHTML =
-      largeWasteSize.toFixed(2);
+      largeWasteSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_large_waste_percent').innerHTML =
-      `(${largeWastePercent}%)`;
+      `${largeWastePercent}%`;
     document.getElementById('text_under_map_large_score').innerHTML =
-      largeIntersectionPercent - largeWastePercent;
+      (largeIntersectionPercent - largeWastePercent).toFixed(2);
   }
 
   function updateSmallCircleInnerHTML(polygonArea) {
@@ -142,20 +143,20 @@ limitations under the License.
     const smallWasteSize = smallCircleSize - getIntersectionSize(polygonArea, smallCircleArea);
     const smallWastePercent = (100 * smallWasteSize / globalBusinessSize).toFixed(2);
 
-    document.getElementById('text_under_map_small_size').innerHTML =
-      smallCircleSize.toFixed(2);
     document.getElementById('text_under_map_small_radius').innerHTML =
-      smallRadius.toFixed(2);
+      `${(smallRadius/1000).toFixed(1)} km`;
+    document.getElementById('text_under_map_small_size').innerHTML =
+      smallCircleSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_small').innerHTML =
-      getIntersectionSize(polygonArea, smallCircleArea).toFixed(2);
+      getIntersectionSize(polygonArea, smallCircleArea).toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_small_percent').innerHTML =
-      `(${smallIntersectionPercent}%)`;
+      `${smallIntersectionPercent}%`;
     document.getElementById('text_under_map_small_waste').innerHTML =
-      smallWasteSize.toFixed(2);
+      smallWasteSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_small_waste_percent').innerHTML =
-      `(${smallWastePercent}%)`;
+      `${smallWastePercent}%`;
     document.getElementById('text_under_map_small_score').innerHTML =
-      smallIntersectionPercent - smallWastePercent;
+      (smallIntersectionPercent - smallWastePercent).toFixed(2);
   }
 
   /* Select aka dropdown */
@@ -205,14 +206,18 @@ limitations under the License.
   });
 
   function parseContentJsonObject(object) {
-    const polygonsMap = mapPolygonsToNameAndCoordinates(object);
+    globalJsonKMLMapObject = object;
+    globalPolygonsMap = mapPolygonsToNameAndCoordinates(object);
     closeDialog();
-    drawAllPolygons(polygonsMap);
-    addMenuListItems(polygonsMap.keys());
-    globalPolygonsMap = polygonsMap;
-    const unionPolygon = unionOfPolygons(polygonsMap.values().next().value);
+
+    drawAllPolygons(globalPolygonsMap);
+    addMenuListItems(globalPolygonsMap.keys());
+    const unionPolygon = unionOfPolygons(globalPolygonsMap.values().next().value);
     updateUI(unionPolygon);
-    createCsvFileAndDownload(filename, object);
+  }
+
+  function downloadRecommendations() {
+    createCsvFileAndDownload(filename, globalJsonKMLMapObject);
   }
 
   function mapPolygonsToNameAndCoordinates(object) {
@@ -312,19 +317,22 @@ limitations under the License.
     const customWasteSize = customCircleSize - intersectionSize;
     const customWastePercent = (100 * customWasteSize / globalBusinessSize).toFixed(2);
 
-    document.getElementById('radius').innerHTML = radius;
+    document.getElementById('radius').innerHTML =
+      `${radius} km`;
+    document.getElementById('text_under_map_custom_radius').innerHTML =
+      `${radius} km`;
     document.getElementById('text_under_map_custom_size').innerHTML =
-      customCircleSize.toFixed(2);
+      customCircleSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_custom').innerHTML =
-      intersectionSize.toFixed(2);
+      intersectionSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_custom_waste').innerHTML =
-      (customCircleSize - intersectionSize).toFixed(2);
+      (customCircleSize - intersectionSize).toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('text_under_map_custom_percent').innerHTML =
-      `(${customIntersectionPercent}%)`;
+      `${customIntersectionPercent}%`;
     document.getElementById('text_under_map_custom_waste_percent').innerHTML =
-      `(${customWastePercent}%)`;
+      `${customWastePercent}%`;
     document.getElementById('text_under_map_custom_score').innerHTML =
-      customIntersectionPercent - customWastePercent;
+      (customIntersectionPercent - customWastePercent).toFixed(2);
   }
 
   // Checkboxes

@@ -40,12 +40,6 @@ limitations under the License.
                     <span class="mdl-layout-title">Project Radium</span>
                     <div class="mdl-layout-spacer"></div>
                     <nav class="mdl-navigation">
-                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-                            <select class="mdl-textfield__input"
-                                    id="city-list-select"
-                                    onChange="updatedSelectedOptions(this.value)">
-                            </select>
-                        </div>
                         <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
                                 id="show-dialog-upload">
                             Upload KML File
@@ -78,208 +72,152 @@ limitations under the License.
             </header>
             <main class="mdl-layout__content">
                 <div class="page-content">
-                    <div id="map">
+                    <div class="wrapper">
+                      <div class="map" id="map"></div>
+                      <div class="controls">
+                        <!-- Select Area section-->
+                        <div class="section select-area">
+                          <div class="title">
+                            Select Targeting Area
+                          </div>
+                          <div class="content">
+                            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                              <select class="mdl-textfield__input"
+                                      id="city-list-select"
+                                      onChange="updatedSelectedOptions(this.value)">
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Business Info section-->
+                        <div class="section business-area">
+                          <div class="title">
+                            Business Targeting Area
+                          </div>
+                          <div class="content">
+                            <div><strong>Size:</strong><span id="text_under_map_business"></span></div>
+                            <div><strong>Coordinates:</strong> <span id="circle_center_coordinates"></span></div>
+                          </div>
+                        </div>
+                        <!-- Select Shape section-->
+                        <div class="section">
+                          <div class="title">
+                            Select Shape
+                          </div>
+                          <div class="content">
+                            <label class = "mdl-checkbox mdl-js-checkbox" for = "largeCheckbox">
+                              <input type = "checkbox"
+                                    id = "largeCheckbox"
+                                    class = "mdl-checkbox__input"
+                                    onclick = "updateLargeCircleCheckbox()"
+                                    unchecked>
+                              <span class = "mdl-checkbox__label">Large Circle</span>
+                            </label>
+                            <label class = "mdl-checkbox mdl-js-checkbox" for = "smallCheckbox">
+                              <input type = "checkbox"
+                                    id = "smallCheckbox"
+                                    class = "mdl-checkbox__input"
+                                    onclick = "updateSmallCircleCheckbox()"
+                                    unchecked>
+                              <span class = "mdl-checkbox__label">Small Circle</span>
+                            </label>
+                            <label class = "mdl-checkbox mdl-js-checkbox" for = "customCheckbox">
+                              <input type = "checkbox"
+                                    id = "customCheckbox"
+                                    class = "mdl-checkbox__input"
+                                    onclick = "updateCustomCircleCheckbox()"
+                                    unchecked>
+                              <span class = "mdl-checkbox__label">Custom Circle</span>
+                            </label>
+                            <label class = "mdl-checkbox mdl-js-checkbox" for = "rectangleCheckbox">
+                              <input type = "checkbox"
+                                    id = "rectangleCheckbox"
+                                    class = "mdl-checkbox__input"
+                                    onclick = "updateRectanlgeCheckbox()"
+                                    unchecked>
+                              <span class = "mdl-checkbox__label">Rectangle</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div class="section">
+                          <div class="title">
+                            Targeting info
+                          </div>
+                          <div class="content">
+                            <div class="flex">
+                              Select custom radius:
+                              <input id = "sliderRadius"
+                                    class = "mdl-slider mdl-js-slider"
+                                    type = "range"
+                                    min = "1"
+                                    max = "20"
+                                    value = "7"
+                                    tabindex = "0"
+                                    step = "0.1"
+                                    oninput = "calculateCustomFields(this.value)"
+                                    onchange = "calculateCustomFields(this.value)"/>
+                              <div id = "radius" ></div>
+                            </div>
+                            <table class="targeting-info">
+                              <tr>
+                                <th></th>
+                                <th>Large</th>
+                                <th>Custom</th>
+                                <th>Small</th>
+                              </tr>
+                              <tr>
+                                <th class="align-left">Radius</th>
+                                <td id="text_under_map_large_radius"></td>
+                                <td id="text_under_map_custom_radius"></td>
+                                <td id="text_under_map_small_radius"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">% Intersection</th>
+                                <td id="text_under_map_large_percent"></td>
+                                <td id="text_under_map_custom_percent"></td>
+                                <td id="text_under_map_small_percent"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">% Waste</th>
+                                <td id="text_under_map_large_waste_percent"></td>
+                                <td id="text_under_map_custom_waste_percent"></td>
+                                <td id="text_under_map_small_waste_percent"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">Circle Size</th>
+                                <td id="text_under_map_large_size"></td>
+                                <td id="text_under_map_custom_size"></td>
+                                <td id="text_under_map_small_size"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">Intersection Size</th>
+                                <td id="text_under_map_large"></td>
+                                <td id="text_under_map_custom"></td>
+                                <td id="text_under_map_small"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">Waste Size</th>
+                                <td id="text_under_map_large_waste"></td>
+                                <td id="text_under_map_custom_waste"></td>
+                                <td id="text_under_map_small_waste"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">Circle Score</th>
+                                <td id="text_under_map_large_score"></td>
+                                <td id="text_under_map_custom_score"></td>
+                                <td id="text_under_map_small_score"></td>
+                              </tr>
+                            </table>
+                          </div>
+                        </div>
+                        <div class="section align-right">
+                          <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                                onclick="downloadRecommendations()">
+                            Download Targeting Settings
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <table>
-                        <tr>
-                            <th>
-                                Business targeting size:
-                            </th>
-                            <th id="text_under_map_business">
-                                Text
-                            </th>
-                            <th>
-                                Circle Center:
-                            </th>
-                            <th id="circle_center_coordinates">Corodinates</th>
-                        </tr>
-                        <tr>
-                        <thead>
-                            <th>
-                                <label class = "mdl-checkbox mdl-js-checkbox" for = "largeCheckbox">
-                                <input type = "checkbox"
-                                       id = "largeCheckbox"
-                                       class = "mdl-checkbox__input"
-                                       onclick = "updateLargeCircleCheckbox()"
-                                       unchecked>
-                                <span class = "mdl-checkbox__label">Large Circle</span>
-                                </label>
-                            </th>
-                            <th>
-                                <label class = "mdl-checkbox mdl-js-checkbox" for = "smallCheckbox">
-                                <input type = "checkbox"
-                                       id = "smallCheckbox"
-                                       class = "mdl-checkbox__input"
-                                       onclick = "updateSmallCircleCheckbox()"
-                                       unchecked>
-                                <span class = "mdl-checkbox__label">Small Circle</span>
-                                </label>
-                            </th>
-                            <th>
-                                <label class = "mdl-checkbox mdl-js-checkbox" for = "customCheckbox">
-                                <input type = "checkbox"
-                                       id = "customCheckbox"
-                                       class = "mdl-checkbox__input"
-                                       onclick = "updateCustomCircleCheckbox()"
-                                       unchecked>
-                                <span class = "mdl-checkbox__label">Custom Circle</span>
-                                </label>
-                            </th>
-                            <th>
-                                <label class = "mdl-checkbox mdl-js-checkbox" for = "rectangleCheckbox">
-                                <input type = "checkbox"
-                                       id = "rectangleCheckbox"
-                                       class = "mdl-checkbox__input"
-                                       onclick = "updateRectanlgeCheckbox()"
-                                       unchecked>
-                                <span class = "mdl-checkbox__label">Rectangle</span>
-                                </label>
-                            </th>
-                        </thead>
-                        </tr>
-                    </table>
-                    <table style="width:100%">
-                        <tr>
-                            <th>
-                                <div id="text_under_map_lr">Large circle radius: </div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_cr">Select custom radius:</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_sr">Small circle radius: </div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_large_radius">Large Radius</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_custom_radius">
-                                    <div id = "radius" >
-                                        Custom Radius
-                                    </div>
-                                    <input id = "sliderRadius"
-                                           class = "mdl-slider mdl-js-slider"
-                                           type = "range"
-                                           min = "1"
-                                           max = "20"
-                                           value = "7"
-                                           tabindex = "0"
-                                           step = "0.1"
-                                           oninput = "calculateCustomFields(this.value)"
-                                           onchange = "calculateCustomFields(this.value)"/>
-                                </div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_small_radius">
-                                    Small Radius
-                                </div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_ls">
-                                    Circle size:
-                                </div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_cs">
-                                    Circle size:
-                                </div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_ss">
-                                    Circle size:
-                                </div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_large_size">Large size</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_custom_size"><i>Custom size</i></div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_small_size">Small size</div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_li">Intersection size: (percent)</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_ci">Intersection size: (percent)</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_si">Intersection size: (percent)</div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_large">Large intersection size</div>
-                                <div id="text_under_map_large_percent">Large intersection size percent</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_custom"><i>Custom intersection size</i></div>
-                                <div id="text_under_map_custom_percent">Custom intersection size percent</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_small">Small intersection size</div>
-                                <div id="text_under_map_small_percent">Small intersection size percent</div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_lw">Waste size: (percent)</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_cw">Waste size: (percent)</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_sw">Waste size: (percent)</div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_large_waste">Large waste size</div>
-                                <div id="text_under_map_large_waste_percent">Large waste size percent</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_custom_waste"><i>Custom waste size</i></div>
-                                <div id="text_under_map_custom_waste_percent">Custom waste size percent</div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_small_waste">Small waste size</div>
-                                <div id="text_under_map_small_waste_percent">Small waste size percent</div>
-                            </th>
-                        </tr>
-                    </table>
-                    <br/>
-                    <table>
-                        <tr>
-                            <th>Large circle score</th>
-                            <th>Custom circle score</th>
-                            <th>Small circle score</th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="text_under_map_large_score"><i>Large circle score></i></div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_custom_score"><i>Custom circle score></i></div>
-                            </th>
-                            <th>
-                                <div id="text_under_map_small_score"><i>Small circle score></i></div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th>
-                                <div id="dropdown"></div>
-                            </th>
-                        </tr>
-                    </table>
                 </div>
             </main>
         </div>
