@@ -99,10 +99,9 @@ limitations under the License.
                             <div><strong>Coordinates:</strong> <span id="circle_center_coordinates"></span></div>
                           </div>
                         </div>
-                        <!-- Select Shape section-->
                         <div class="section">
                           <div class="title">
-                            Select Shape
+                            Display Shape
                           </div>
                           <div class="content">
                             <label class = "mdl-checkbox mdl-js-checkbox" for = "largeCheckbox">
@@ -162,50 +161,105 @@ limitations under the License.
                               <tr>
                                 <th></th>
                                 <th>Large</th>
-                                <th>Custom</th>
                                 <th>Small</th>
+                                <th>Threshold</th>
+                                <th>Custom</th>
                               </tr>
                               <tr>
                                 <th class="align-left">Radius</th>
                                 <td id="text_under_map_large_radius"></td>
-                                <td id="text_under_map_custom_radius"></td>
                                 <td id="text_under_map_small_radius"></td>
+                                <td id="text_under_map_threshold_radius"></td>
+                                <td id="text_under_map_custom_radius"></td>
                               </tr>
                               <tr>
                                 <th class="align-left">% Intersection</th>
                                 <td id="text_under_map_large_percent"></td>
-                                <td id="text_under_map_custom_percent"></td>
                                 <td id="text_under_map_small_percent"></td>
+                                <td id="text_under_map_threshold_percent"></td>
+                                <td id="text_under_map_custom_percent"></td>
                               </tr>
                               <tr>
                                 <th class="align-left">% Waste</th>
                                 <td id="text_under_map_large_waste_percent"></td>
-                                <td id="text_under_map_custom_waste_percent"></td>
                                 <td id="text_under_map_small_waste_percent"></td>
+                                <td id="text_under_map_threshold_waste_percent"></td>
+                                <td id="text_under_map_custom_waste_percent"></td>
                               </tr>
                               <tr>
                                 <th class="align-left">Circle Size</th>
                                 <td id="text_under_map_large_size"></td>
-                                <td id="text_under_map_custom_size"></td>
                                 <td id="text_under_map_small_size"></td>
+                                <td id="text_under_map_threshold_size"></td>
+                                <td id="text_under_map_custom_size"></td>
                               </tr>
                               <tr>
                                 <th class="align-left">Intersection Size</th>
                                 <td id="text_under_map_large"></td>
-                                <td id="text_under_map_custom"></td>
                                 <td id="text_under_map_small"></td>
+                                <td id="text_under_map_threshold"></td>
+                                <td id="text_under_map_custom"></td>
                               </tr>
                               <tr>
                                 <th class="align-left">Waste Size</th>
                                 <td id="text_under_map_large_waste"></td>
-                                <td id="text_under_map_custom_waste"></td>
                                 <td id="text_under_map_small_waste"></td>
+                                <td id="text_under_map_threshold_waste"></td>
+                                <td id="text_under_map_custom_waste"></td>
                               </tr>
                               <tr>
                                 <th class="align-left">Circle Score</th>
                                 <td id="text_under_map_large_score"></td>
-                                <td id="text_under_map_custom_score"></td>
                                 <td id="text_under_map_small_score"></td>
+                                <td id="text_under_map_threshold_score"></td>
+                                <td id="text_under_map_custom_score"></td>
+                              </tr>
+                              <tr>
+                                <th class="align-left">Selected Settings</th>
+                                <td>
+                                  <label class = "mdl-radio" for = "largeCircleRadio">
+                                    <input type = "radio"
+                                          name = "selectedTargeting"
+                                          value = "largeCircle"
+                                          id = "largeCircleRadio"
+                                          class = "mdl-radio__input"
+                                          onchange = "updateSelectedCircle()"
+                                          unchecked>
+                                  </label>
+                                </td>
+                                <td>
+                                  <label class = "mdl-radio" for = "smallCircleRadio">
+                                    <input type = "radio"
+                                          name = "selectedTargeting"
+                                          value = "smallCircle"
+                                          id = "smallCircleRadio"
+                                          class = "mdl-radio__input"
+                                          onchange = "updateSelectedCircle()"
+                                          unchecked>
+                                  </label>
+                                </td>
+                                <td>
+                                  <label class = "mdl-radio" for = "thresholdCircleRadio">
+                                    <input type = "radio"
+                                          name = "selectedTargeting"
+                                          value = "thresholdCircle"
+                                          id = "thresholdCircleRadio"
+                                          class = "mdl-radio__input"
+                                          onchange = "updateSelectedCircle()"
+                                          unchecked>
+                                  </label>
+                                </td>
+                                <td>
+                                  <label class = "mdl-radio" for = "customCircleRadio">
+                                    <input type = "radio"
+                                          name = "selectedTargeting"
+                                          value = "customCircle"
+                                          id = "customCircleRadio"
+                                          class = "mdl-radio__input"
+                                          onchange = "updateSelectedCircle()"
+                                          unchecked>
+                                  </label>
+                                </td>
                               </tr>
                             </table>
                           </div>

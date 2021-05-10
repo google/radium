@@ -48,6 +48,7 @@ limitations under the License.
     },
   };
 
+  let globalCodeName;
   let globalUnionPolygonArea;
   let globalSquareCoords;
   let globalCenter = projectParameters.mapCenter;
@@ -60,7 +61,8 @@ limitations under the License.
   let globalPolygonsMap;
   let globalCustomCircle;
   let filename = "";
-  let globalJsonKMLMapObject = null;
+
+  let globalLocationsMap = {};
 
   function initMap() {
     globalMap = new google.maps.Map(document.getElementById('map'), {
@@ -73,9 +75,9 @@ limitations under the License.
 
   function updateUI(polygon) {
     setUpGlobalVariables(polygon);
-    calculateCustomFields(radius = projectParameters.customRadius);
     updateCheckboxes();
     updateInnerHTML();
+    updateSelectedCircleRadio();
   }
 
   function setUpGlobalVariables(polygon) {
@@ -88,8 +90,7 @@ limitations under the License.
 
   function updateInnerHTML() {
     updateGlobalBusinessInnerHTML();
-    updateLargeCircleInnerHTML(globalUnionPolygonArea);
-    updateSmallCircleInnerHTML(globalUnionPolygonArea);
+    updateAllCirclesInnerHTML();
   }
 
   function updateGlobalBusinessInnerHTML() {
@@ -99,64 +100,39 @@ limitations under the License.
       `lat: ${businessCenter.lat}, lng: ${businessCenter.lng}`;
   }
 
-  function updateLargeCircleInnerHTML(polygonArea) {
-    const largeRadius = getLargeRadius(globalSquareCoords);
-    const largeCenter = getCenter(globalSquareCoords);
-    const largeCircleCoords = convertCircleToPolygon(largeCenter, largeRadius, 360 * 2);
-    const largeCircleArea = getPolygonArea(largeCircleCoords,
-      projectParameters.colors.lightGray,
-      projectParameters.colors.lightGray
-    );
-    const largeCircleSize = getIntersectionSize(largeCircleArea, largeCircleArea);
-    const largeIntersectionPercent =
-      (100 * getIntersectionSize(polygonArea, largeCircleArea) / globalBusinessSize).toFixed(2);
-    const largeWasteSize = largeCircleSize - getIntersectionSize(polygonArea, largeCircleArea);
-    const largeWastePercent = (100 * largeWasteSize / globalBusinessSize).toFixed(2);
+  function updateAllCirclesInnerHTML() {
+    const circleTypes = ['large', 'small', 'threshold', 'custom'];
 
-    document.getElementById('text_under_map_large_radius').innerHTML =
-      `${(largeRadius/1000).toFixed(1)} km`;
-    document.getElementById('text_under_map_large_size').innerHTML =
-      largeCircleSize.toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_large').innerHTML =
-      getIntersectionSize(polygonArea, largeCircleArea).toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_large_percent').innerHTML =
-      `${largeIntersectionPercent}%`;
-    document.getElementById('text_under_map_large_waste').innerHTML =
-      largeWasteSize.toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_large_waste_percent').innerHTML =
-      `${largeWastePercent}%`;
-    document.getElementById('text_under_map_large_score').innerHTML =
-      (largeIntersectionPercent - largeWastePercent).toFixed(2);
+    for (let i=0; i<circleTypes.length; i++) {
+      updateCircleInnerHtml(circleTypes[i]);
+    }
   }
 
-  function updateSmallCircleInnerHTML(polygonArea) {
-    const smallRadius = getSmallRadius(globalSquareCoords);
-    const smallCenter = getCenter(globalSquareCoords);
-    const smallCircleCoords = convertCircleToPolygon(smallCenter, smallRadius, 360);
-    const smallCircleArea = getPolygonArea(smallCircleCoords,
-      projectParameters.colors.lightGray,
-      projectParameters.colors.lightGray
-    );
-    const smallCircleSize = getIntersectionSize(smallCircleArea, smallCircleArea);
-    const smallIntersectionPercent =
-      (100 * getIntersectionSize(polygonArea, smallCircleArea) / globalBusinessSize).toFixed(2);
-    const smallWasteSize = smallCircleSize - getIntersectionSize(polygonArea, smallCircleArea);
-    const smallWastePercent = (100 * smallWasteSize / globalBusinessSize).toFixed(2);
+  function updateCircleInnerHtml(circleType) {
+    let circleData = globalLocationsMap[globalCodeName][`${circleType}Circle`];
+    let radius = circleData.radius;
+    let circleSize = circleData.size;
+    let intersectionSize = circleData.intersectionSize;
+    let intersectionPercent = circleData.intersectionPercent;
+    let wasteSize = circleData.wasteSize;
+    let wastePercent = circleData.wastePercent;
+    let score = circleData.score;
 
-    document.getElementById('text_under_map_small_radius').innerHTML =
-      `${(smallRadius/1000).toFixed(1)} km`;
-    document.getElementById('text_under_map_small_size').innerHTML =
-      smallCircleSize.toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_small').innerHTML =
-      getIntersectionSize(polygonArea, smallCircleArea).toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_small_percent').innerHTML =
-      `${smallIntersectionPercent}%`;
-    document.getElementById('text_under_map_small_waste').innerHTML =
-      smallWasteSize.toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_small_waste_percent').innerHTML =
-      `${smallWastePercent}%`;
-    document.getElementById('text_under_map_small_score').innerHTML =
-      (smallIntersectionPercent - smallWastePercent).toFixed(2);
+    document.getElementById(`text_under_map_${circleType}_radius`).innerHTML = `${radius} km`;
+    document.getElementById(`text_under_map_${circleType}_size`).innerHTML = circleSize + ' km<sup>2</sup>';
+    document.getElementById(`text_under_map_${circleType}`).innerHTML = intersectionSize + ' km<sup>2</sup>';
+    document.getElementById(`text_under_map_${circleType}_percent`).innerHTML = `${intersectionPercent}%`;
+    document.getElementById(`text_under_map_${circleType}_waste`).innerHTML = wasteSize + ' km<sup>2</sup>';
+    document.getElementById(`text_under_map_${circleType}_waste_percent`).innerHTML = `${wastePercent}%`;
+    document.getElementById(`text_under_map_${circleType}_score`).innerHTML = score;
+
+    if (circleType == 'custom') {
+      // Update Custom Radius in Slider
+      document.getElementById('radius').innerHTML = `${radius} km`;
+
+      // Update Custom Circle in Map
+      updateCustomCircleCheckbox();
+    }
   }
 
   /* Select aka dropdown */
@@ -170,6 +146,7 @@ limitations under the License.
   }
 
   function updatedSelectedOptions(codename) {
+    globalCodeName = codename;
     updateUI(unionOfPolygons(globalPolygonsMap.get(codename)));
   }
 
@@ -206,18 +183,69 @@ limitations under the License.
   });
 
   function parseContentJsonObject(object) {
-    globalJsonKMLMapObject = object;
     globalPolygonsMap = mapPolygonsToNameAndCoordinates(object);
+    globalCodeName = globalPolygonsMap.keys().next().value;
     closeDialog();
+
+    populateLocationsMap(globalPolygonsMap);
 
     drawAllPolygons(globalPolygonsMap);
     addMenuListItems(globalPolygonsMap.keys());
+
     const unionPolygon = unionOfPolygons(globalPolygonsMap.values().next().value);
     updateUI(unionPolygon);
   }
 
+  function populateLocationsMap() {
+    globalPolygonsMap.forEach( (polygon, key, map) => {
+      locationUnionPolygonArea = getPolygonAreaFromJtst(globalMap, unionOfPolygons(polygon));
+      locationSquareCoords = getSquareCoords(getPolygonPoints(locationUnionPolygonArea));
+      locationCenter = getCenter(locationSquareCoords);
+
+      let location = {
+        'center': locationCenter,
+        'largeCircle': getCircle(getLargeRadius(locationSquareCoords), locationSquareCoords, locationUnionPolygonArea),
+        'smallCircle': getCircle(getSmallRadius(locationSquareCoords), locationSquareCoords, locationUnionPolygonArea),
+        'thresholdCircle': getCircle(getThresholdRadius(polygon) * 1000, locationSquareCoords, locationUnionPolygonArea),
+        'customCircle': getCircle(projectParameters.customRadius * 1000, locationSquareCoords, locationUnionPolygonArea),
+        'selected': 'thresholdCircle',
+      };
+
+      globalLocationsMap[key] = location;
+    });
+  }
+
+  function getCircle(radius, squareCoords, polygonArea) {
+    const center = getCenter(squareCoords);
+    const businessSize = getPolygonSize(polygonArea);
+
+    const circleCoords = convertCircleToPolygon(center, radius, 360 * 2);
+    const circleArea = getPolygonArea(circleCoords,
+      projectParameters.colors.lightGray,
+      projectParameters.colors.lightGray
+    );
+
+    const circleSize =+ getIntersectionSize(circleArea, circleArea).toFixed(2);
+    const intersectionSize =+ getIntersectionSize(polygonArea, circleArea).toFixed(2);
+    const intersectionPercent =
+      +(100 * getIntersectionSize(polygonArea, circleArea) / businessSize).toFixed(2);
+    const wasteSize = +(circleSize - getIntersectionSize(polygonArea, circleArea)).toFixed(2);
+    const wastePercent = +(100 * wasteSize / businessSize).toFixed(2);
+    const score = +(intersectionPercent - wastePercent).toFixed(2);
+
+    return {
+      'radius': +(radius/1000).toFixed(1),  // radius in kms
+      'size': circleSize,
+      'intersectionPercent': intersectionPercent,
+      'intersectionSize': intersectionSize,
+      'wastePercent': wastePercent,
+      'wasteSize': wasteSize,
+      'score': score,
+    };
+  }
+
   function downloadRecommendations() {
-    createCsvFileAndDownload(filename, globalJsonKMLMapObject);
+    createCsvFileAndDownload(filename, globalLocationsMap);
   }
 
   function mapPolygonsToNameAndCoordinates(object) {
@@ -296,47 +324,30 @@ limitations under the License.
   // Slider
   function calculateCustomFields(radius) {
     globalCustomRadius = radius;
+
     let degrees = 360;
     if (radius > 5) {
       degrees = degrees * 2;
     }
-    updateCustomInnerHTML(globalUnionPolygonArea, radius, degrees);
-    updateCustomCircleCheckbox();
+
+    locationSquareCoords = getSquareCoords(getPolygonPoints(globalUnionPolygonArea));
+    globalLocationsMap[globalCodeName].customCircle = getCircle(radius * 1000, locationSquareCoords, globalUnionPolygonArea)
+    updateCircleInnerHtml("custom");
   }
 
-  function updateCustomInnerHTML(polygonArea, radius, degrees) {
-    const customCircleCoords = convertCircleToPolygon(globalCenter, radius * 1000, degrees * 2);
-    const customCircleArea = getPolygonArea(customCircleCoords,
-      projectParameters.colors.lightGray,
-      projectParameters.colors.lightGray
-    );
-    const customCircleSize = getIntersectionSize(customCircleArea, customCircleArea);
+  // Called from Radio Button UI
+  function updateSelectedCircle() {
+    const circleType = document.querySelector('input[name="selectedTargeting"]:checked').value;
+    globalLocationsMap[globalCodeName].selected = circleType;
+  }
 
-    const intersectionSize = Math.abs(getIntersectionSize(polygonArea, customCircleArea));
-    const customIntersectionPercent = (100 * intersectionSize / globalBusinessSize).toFixed(2);
-    const customWasteSize = customCircleSize - intersectionSize;
-    const customWastePercent = (100 * customWasteSize / globalBusinessSize).toFixed(2);
-
-    document.getElementById('radius').innerHTML =
-      `${radius} km`;
-    document.getElementById('text_under_map_custom_radius').innerHTML =
-      `${radius} km`;
-    document.getElementById('text_under_map_custom_size').innerHTML =
-      customCircleSize.toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_custom').innerHTML =
-      intersectionSize.toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_custom_waste').innerHTML =
-      (customCircleSize - intersectionSize).toFixed(2) + ' km<sup>2</sup>';
-    document.getElementById('text_under_map_custom_percent').innerHTML =
-      `${customIntersectionPercent}%`;
-    document.getElementById('text_under_map_custom_waste_percent').innerHTML =
-      `${customWastePercent}%`;
-    document.getElementById('text_under_map_custom_score').innerHTML =
-      (customIntersectionPercent - customWastePercent).toFixed(2);
+  // Update the checked value of the Selected Settings Radio Buttons
+  function updateSelectedCircleRadio() {
+    const circleType = globalLocationsMap[globalCodeName].selected;
+    document.getElementById(`${circleType}Radio`).checked = true;
   }
 
   // Checkboxes
-
   function updateCheckboxes() {
     updateCustomCircleCheckbox();
     updateRectanlgeCheckbox();
@@ -531,6 +542,38 @@ limitations under the License.
     return distance;
   }
 
+  function getThresholdRadius(polygon) {
+    const unionPolygonArea = getPolygonAreaFromJtst(globalMap,
+      unionOfPolygons(polygon));
+    const center = getCenter(getSquareCoords(getPolygonPoints(unionPolygonArea)));
+    const polygonSize = getPolygonSize(unionPolygonArea);
+    const intersectionTreshold = projectParameters.csvConfig.intersectionTreshold;
+    const minRadius = projectParameters.csvConfig.minRadius;
+    const maxRadius = getLargeRadius(getSquareCoords(getPolygonPoints(unionPolygonArea))) / 1000;
+
+    let thresholdRadius = 0;
+    let i = minRadius;
+
+    while (i < maxRadius) {
+      let circleArea = getPolygonArea(
+        convertCircleToPolygon(center, i * 1000, 360 * 2),
+        projectParameters.colors.lightGray,
+        projectParameters.colors.lightGray
+      );
+
+      let intersectionSize = getIntersectionSize(unionPolygonArea, circleArea);
+      let intersectionPercent = (100 * intersectionSize / polygonSize).toFixed(2);
+
+      if (intersectionPercent > intersectionTreshold) {
+        thresholdRadius = i;
+        break;
+      }
+      i = parseFloat((i + 0.1).toFixed(1));
+    }
+
+    return thresholdRadius;
+  }
+
   function convertCircleToPolygon(center, radius, num) {
     const points = [];
     const degreeStep = 360 / num;
@@ -545,52 +588,31 @@ limitations under the License.
     return points;
   }
 
-  function createCsvFileAndDownload(filename, object) {
+  function createCsvFileAndDownload(filename, locations) {
     const csvFileName = removeExtension(filename) + projectParameters.fileSuffix;
-    const csvLines = createCsvContent(mapPolygonsToNameAndCoordinates(object));
+    const csvLines = createCsvContent(locations);
     const csvContent = csvLines.join('\n');
     createFileAndDownload(csvContent, csvFileName);
   }
 
-  function createCsvContent(polygonsMap) {
+  function createCsvContent(locations) {
     const minRadius = projectParameters.csvConfig.minRadius;
     const intersectionTreshold = projectParameters.csvConfig.intersectionTreshold;
     const csvLines = [getCsvHeader()];
-    for (const codename of polygonsMap.keys()) {
-      const unionPolygonArea = getPolygonAreaFromJtst(globalMap,
-        unionOfPolygons(polygonsMap.get(codename)));
-      const center = getCenter(getSquareCoords(getPolygonPoints(unionPolygonArea)));
-      const polygonSize = getPolygonSize(unionPolygonArea);
-      const maxRadius = getLargeRadius(getSquareCoords(getPolygonPoints(unionPolygonArea))) / 1000;
-      let tresholdString;
-      let i = minRadius;
-      while (i < maxRadius) {
-        let circleArea = getPolygonArea(
-          convertCircleToPolygon(center, i * 1000, 360 * 2),
-          projectParameters.colors.lightGray,
-          projectParameters.colors.lightGray
-        );
 
-        let intersectionSize = getIntersectionSize(unionPolygonArea, circleArea);
-        let circleSize = getIntersectionSize(circleArea, circleArea);
+    Object.keys(locations).forEach(key => {
+      const locationData = locations[key];
 
-        let intersectionPercent = (100 * intersectionSize / polygonSize).toFixed(2);
-        let wastePercent = (100 * (circleSize - intersectionSize) / polygonSize).toFixed(2);
+      let csvLine = [];
+      csvLine.push(projectParameters.csvConfig.accountId);
+      csvLine.push(projectParameters.csvConfig.campaignName);
+      csvLine.push(`${locationData[locationData.selected].radius}${projectParameters.csvConfig.radiusUnit}:${locationData.center.lat}:${locationData.center.lng}`);
+      csvLine.push(locationData[locationData.selected].radius);
+      csvLine.push(projectParameters.csvConfig.radiusUnit);
 
-        let currentScore = intersectionPercent - wastePercent;
+      csvLines.push(csvLine.join(','));
+    });
 
-        if (intersectionPercent > intersectionTreshold) {
-          tresholdString = `(${i}${projectParameters.radiusUnit}:${center.lat}:${center.lng}), ${i}, ${projectParameters.radiusUnit}`;
-          break;
-        }
-        i = parseFloat((i + 0.1).toFixed(1));
-      }
-
-      csvLines.push(createCsvLine(
-        projectParameters.csvConfig.accountId, 
-        projectParameters.csvConfig.campaignName,
-        tresholdString));
-    }
     return csvLines;
   }
 
