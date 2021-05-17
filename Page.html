@@ -144,19 +144,20 @@ limitations under the License.
                           </div>
                           <div class="content">
                             <div class="flex">
-                              Select custom radius:
+                              <strong>Select custom radius:</strong>
                               <input id = "sliderRadius"
                                     class = "mdl-slider mdl-js-slider"
                                     type = "range"
                                     min = "1"
                                     max = "20"
-                                    value = "7"
+                                    value = "5"
                                     tabindex = "0"
                                     step = "0.1"
                                     oninput = "calculateCustomFields(this.value)"
                                     onchange = "calculateCustomFields(this.value)"/>
                               <div id = "radius" ></div>
                             </div>
+                            <strong>Custom circle center: </strong><span id="custom_circle_center"></span>
                             <table class="targeting-info">
                               <tr>
                                 <th></th>

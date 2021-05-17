@@ -118,6 +118,7 @@ limitations under the License.
     let wastePercent = circleData.wastePercent;
     let score = circleData.score;
 
+    document.getElementById('sliderRadius').value = radius;
     document.getElementById(`text_under_map_${circleType}_radius`).innerHTML = `${radius} km`;
     document.getElementById(`text_under_map_${circleType}_size`).innerHTML = circleSize + ' km<sup>2</sup>';
     document.getElementById(`text_under_map_${circleType}`).innerHTML = intersectionSize + ' km<sup>2</sup>';
@@ -129,9 +130,7 @@ limitations under the License.
     if (circleType == 'custom') {
       // Update Custom Radius in Slider
       document.getElementById('radius').innerHTML = `${radius} km`;
-
-      // Update Custom Circle in Map
-      updateCustomCircleCheckbox();
+      document.getElementById('custom_circle_center').innerHTML = `lat: ${circleData.center.lat}, lng: ${circleData.center.lng}`;
     }
   }
 
@@ -215,8 +214,11 @@ limitations under the License.
     });
   }
 
-  function getCircle(radius, squareCoords, polygonArea) {
-    const center = getCenter(squareCoords);
+  function getCircle(radius, squareCoords, polygonArea, center=null) {
+    if (!center) {
+      center = getCenter(squareCoords);
+    }
+
     const businessSize = getPolygonSize(polygonArea);
 
     const circleCoords = convertCircleToPolygon(center, radius, 360 * 2);
@@ -234,6 +236,7 @@ limitations under the License.
     const score = +(intersectionPercent - wastePercent).toFixed(2);
 
     return {
+      'center': center,
       'radius': +(radius/1000).toFixed(1),  // radius in kms
       'size': circleSize,
       'intersectionPercent': intersectionPercent,
@@ -324,15 +327,19 @@ limitations under the License.
   // Slider
   function calculateCustomFields(radius) {
     globalCustomRadius = radius;
+    const customCenter = globalLocationsMap[globalCodeName].customCircle.center;
 
     let degrees = 360;
     if (radius > 5) {
       degrees = degrees * 2;
     }
 
-    locationSquareCoords = getSquareCoords(getPolygonPoints(globalUnionPolygonArea));
-    globalLocationsMap[globalCodeName].customCircle = getCircle(radius * 1000, locationSquareCoords, globalUnionPolygonArea)
+    globalLocationsMap[globalCodeName].customCircle = getCircle(radius * 1000, null, globalUnionPolygonArea, customCenter);
+
+    // Update new values for intersection, waste, etc
     updateCircleInnerHtml("custom");
+    // Update Map's Custom Circle with new radius
+    updateCustomCircleCheckbox();
   }
 
   // Called from Radio Button UI
@@ -383,8 +390,7 @@ limitations under the License.
     const myCheckbox = document.getElementById('customCheckbox');
     safeRemoveCircle(globalCustomCircle);
     if (myCheckbox.checked) {
-      globalCustomCircle =
-        drawCircle(getCenter(globalSquareCoords), globalCustomRadius * 1000, projectParameters.colors.lightGray, globalMap);
+      globalCustomCircle = drawCustomCircle();
     }
   }
 
@@ -491,14 +497,24 @@ limitations under the License.
 
   // Circles
   function drawLargeCircle(coords, color, map) {
-    return drawCircle(getCenter(coords), getLargeRadius(coords), color, map);
+    return drawCircle(getCenter(coords), getLargeRadius(coords), color, map, false);
   }
 
   function drawSmallCircle(coords, color, map) {
-    return drawCircle(getCenter(coords), getSmallRadius(coords), color, map);
+    return drawCircle(getCenter(coords), getSmallRadius(coords), color, map, false);
   }
 
-  function drawCircle(center, radius, color, map) {
+  function drawCustomCircle() {
+    return drawCircle(
+      globalLocationsMap[globalCodeName].customCircle.center,
+      globalCustomRadius * 1000,
+      projectParameters.colors.lightGray,
+      globalMap,
+      true
+    );
+  }
+
+  function drawCircle(center, radius, color, map, draggable) {
     const circle = new google.maps.Circle({
       strokeColor: color,
       strokeOpacity: projectParameters.circle.strokeOpacity,
@@ -508,7 +524,25 @@ limitations under the License.
       map,
       center,
       radius,
+      draggable
     });
+
+
+    if (draggable) {
+      google.maps.event.addListener(circle,'dragend',function(){
+        const center = {
+          lat: this.getCenter().lat(),
+          lng: this.getCenter().lng(),
+        };
+
+        // Re-calculate Custom Circle specs
+        globalLocationsMap[globalCodeName].customCircle = getCircle(radius, null, globalUnionPolygonArea, center);
+        updateCircleInnerHtml("custom");
+        // Update Map's Custom Circle with new center
+        updateCustomCircleCheckbox();
+      });
+    }
+
     return circle;
   }
 
@@ -602,11 +636,12 @@ limitations under the License.
 
     Object.keys(locations).forEach(key => {
       const locationData = locations[key];
+      const selectedCircle = locationData[locationData.selected];
 
       let csvLine = [];
       csvLine.push(projectParameters.csvConfig.accountId);
       csvLine.push(projectParameters.csvConfig.campaignName);
-      csvLine.push(`${locationData[locationData.selected].radius}${projectParameters.csvConfig.radiusUnit}:${locationData.center.lat}:${locationData.center.lng}`);
+      csvLine.push(`${selectedCircle.radius}${projectParameters.csvConfig.radiusUnit}:${selectedCircle.center.lat}:${selectedCircle.center.lng}`);
       csvLine.push(locationData[locationData.selected].radius);
       csvLine.push(projectParameters.csvConfig.radiusUnit);
 
