@@ -84,7 +84,8 @@ limitations under the License.
                             <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                               <select class="mdl-textfield__input"
                                       id="city-list-select"
-                                      onChange="updatedSelectedOptions(this.value)">
+                                      onChange="updatedSelectedOptions(this.value)"
+                                      disabled>
                               </select>
                             </div>
                           </div>
@@ -95,7 +96,7 @@ limitations under the License.
                             Business Targeting Area
                           </div>
                           <div class="content">
-                            <div><strong>Size:</strong><span id="text_under_map_business"></span></div>
+                            <div><strong>Size:</strong> <span id="text_under_map_business"></span></div>
                             <div><strong>Coordinates:</strong> <span id="circle_center_coordinates"></span></div>
                           </div>
                         </div>
@@ -109,15 +110,26 @@ limitations under the License.
                                     id = "largeCheckbox"
                                     class = "mdl-checkbox__input"
                                     onclick = "updateLargeCircleCheckbox()"
-                                    unchecked>
+                                    unchecked
+                                    disabled />
                               <span class = "mdl-checkbox__label">Large Circle</span>
+                            </label>
+                            <label class = "mdl-checkbox mdl-js-checkbox" for = "thresholdCheckbox">
+                              <input type = "checkbox"
+                                    id = "thresholdCheckbox"
+                                    class = "mdl-checkbox__input"
+                                    onclick = "updateThresholdCircleCheckbox()"
+                                    unchecked
+                                    disabled />
+                              <span class = "mdl-checkbox__label">Threshold Circle</span>
                             </label>
                             <label class = "mdl-checkbox mdl-js-checkbox" for = "smallCheckbox">
                               <input type = "checkbox"
                                     id = "smallCheckbox"
                                     class = "mdl-checkbox__input"
                                     onclick = "updateSmallCircleCheckbox()"
-                                    unchecked>
+                                    unchecked
+                                    disabled />
                               <span class = "mdl-checkbox__label">Small Circle</span>
                             </label>
                             <label class = "mdl-checkbox mdl-js-checkbox" for = "customCheckbox">
@@ -125,7 +137,8 @@ limitations under the License.
                                     id = "customCheckbox"
                                     class = "mdl-checkbox__input"
                                     onclick = "updateCustomCircleCheckbox()"
-                                    unchecked>
+                                    unchecked
+                                    disabled />
                               <span class = "mdl-checkbox__label">Custom Circle</span>
                             </label>
                             <label class = "mdl-checkbox mdl-js-checkbox" for = "rectangleCheckbox">
@@ -133,7 +146,8 @@ limitations under the License.
                                     id = "rectangleCheckbox"
                                     class = "mdl-checkbox__input"
                                     onclick = "updateRectanlgeCheckbox()"
-                                    unchecked>
+                                    unchecked
+                                    disabled />
                               <span class = "mdl-checkbox__label">Rectangle</span>
                             </label>
                           </div>
@@ -154,7 +168,8 @@ limitations under the License.
                                     tabindex = "0"
                                     step = "0.1"
                                     oninput = "calculateCustomFields(this.value)"
-                                    onchange = "calculateCustomFields(this.value)"/>
+                                    onchange = "calculateCustomFields(this.value)"
+                                    disabled />
                               <div id = "radius" ></div>
                             </div>
                             <strong>Custom circle center: </strong><span id="custom_circle_center"></span>
@@ -187,21 +202,21 @@ limitations under the License.
                                 <td id="text_under_map_threshold_waste_percent"></td>
                                 <td id="text_under_map_custom_waste_percent"></td>
                               </tr>
-                              <tr>
+                              <tr class="toggle-info hidden">
                                 <th class="align-left">Circle Size</th>
                                 <td id="text_under_map_large_size"></td>
                                 <td id="text_under_map_small_size"></td>
                                 <td id="text_under_map_threshold_size"></td>
                                 <td id="text_under_map_custom_size"></td>
                               </tr>
-                              <tr>
+                              <tr class="toggle-info hidden">
                                 <th class="align-left">Intersection Size</th>
                                 <td id="text_under_map_large"></td>
                                 <td id="text_under_map_small"></td>
                                 <td id="text_under_map_threshold"></td>
                                 <td id="text_under_map_custom"></td>
                               </tr>
-                              <tr>
+                              <tr class="toggle-info hidden">
                                 <th class="align-left">Waste Size</th>
                                 <td id="text_under_map_large_waste"></td>
                                 <td id="text_under_map_small_waste"></td>
@@ -225,7 +240,8 @@ limitations under the License.
                                           id = "largeCircleRadio"
                                           class = "mdl-radio__input"
                                           onchange = "updateSelectedCircle()"
-                                          unchecked>
+                                          unchecked
+                                          disabled />
                                   </label>
                                 </td>
                                 <td>
@@ -236,7 +252,8 @@ limitations under the License.
                                           id = "smallCircleRadio"
                                           class = "mdl-radio__input"
                                           onchange = "updateSelectedCircle()"
-                                          unchecked>
+                                          unchecked
+                                          disabled />
                                   </label>
                                 </td>
                                 <td>
@@ -247,7 +264,8 @@ limitations under the License.
                                           id = "thresholdCircleRadio"
                                           class = "mdl-radio__input"
                                           onchange = "updateSelectedCircle()"
-                                          unchecked>
+                                          unchecked
+                                          disabled />
                                   </label>
                                 </td>
                                 <td>
@@ -258,16 +276,26 @@ limitations under the License.
                                           id = "customCircleRadio"
                                           class = "mdl-radio__input"
                                           onchange = "updateSelectedCircle()"
-                                          unchecked>
+                                          unchecked
+                                          disabled />
                                   </label>
                                 </td>
                               </tr>
                             </table>
+                            <div class="align-right">
+                              <button id="toggleInfoButton"
+                                      class="mdl-button mdl-js-button mdl-button--accent"
+                                      onclick="toggleAdditionalInfo()"
+                                      disabled >
+                                Show Additional Info
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div class="section align-right">
                           <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
-                                onclick="downloadRecommendations()">
+                                onclick="downloadRecommendations()"
+                                disabled >
                             Download Targeting Settings
                           </button>
                         </div>

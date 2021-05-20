@@ -57,9 +57,10 @@ limitations under the License.
   let globalRectangle;
   let globalSmallCircle;
   let globalLargeCircle;
+  let globalCustomCircle;
+  let globalThresholdCircle;
   let globalCustomRadius = projectParameters.customRadius;
   let globalPolygonsMap;
-  let globalCustomCircle;
   let filename = "";
 
   let globalLocationsMap = {};
@@ -71,6 +72,25 @@ limitations under the License.
       mapTypeId: google.maps.MapTypeId.TERRAIN,
     });
     googleScriptRun.withSuccessHandler(initMap);
+  }
+
+  function removeDisabledStatus() {
+    document.querySelectorAll('select').forEach(el => {
+      el.disabled = false;
+    });
+
+    document.querySelectorAll('input').forEach(el => {
+      el.disabled = false;
+    });
+
+    document.querySelectorAll('button').forEach(el => {
+      el.disabled = false;
+    });
+
+    document.querySelectorAll('.is-disabled').forEach(el => {
+      el.classList.remove('is-disabled');
+    });
+
   }
 
   function updateUI(polygon) {
@@ -97,7 +117,7 @@ limitations under the License.
     const businessCenter = getCenter(globalSquareCoords);
     document.getElementById('text_under_map_business').innerHTML = globalBusinessSize.toFixed(2) + ' km<sup>2</sup>';
     document.getElementById('circle_center_coordinates').innerHTML =
-      `lat: ${businessCenter.lat}, lng: ${businessCenter.lng}`;
+      `lat: ${businessCenter.lat.toFixed(6)}, lng: ${businessCenter.lng.toFixed(6)}`;
   }
 
   function updateAllCirclesInnerHTML() {
@@ -130,7 +150,7 @@ limitations under the License.
     if (circleType == 'custom') {
       // Update Custom Radius in Slider
       document.getElementById('radius').innerHTML = `${radius} km`;
-      document.getElementById('custom_circle_center').innerHTML = `lat: ${circleData.center.lat}, lng: ${circleData.center.lng}`;
+      document.getElementById('custom_circle_center').innerHTML = `lat: ${circleData.center.lat.toFixed(6)}, lng: ${circleData.center.lng.toFixed(6)}`;
     }
   }
 
@@ -192,6 +212,7 @@ limitations under the License.
     addMenuListItems(globalPolygonsMap.keys());
 
     const unionPolygon = unionOfPolygons(globalPolygonsMap.values().next().value);
+    removeDisabledStatus();
     updateUI(unionPolygon);
   }
 
@@ -342,6 +363,23 @@ limitations under the License.
     updateCustomCircleCheckbox();
   }
 
+  function toggleAdditionalInfo () {
+    var toggleRows = document.querySelectorAll('.toggle-info.hidden');
+
+    if (toggleRows.length) {
+      toggleRows.forEach( item => {
+        item.classList.remove('hidden');
+      });
+      document.getElementById('toggleInfoButton').innerHTML = 'Hide additional info';
+    } else {
+      document.querySelectorAll('.toggle-info').forEach( item => {
+        item.classList.add('hidden');
+      });
+      document.getElementById('toggleInfoButton').innerHTML = 'Show Additional Info';
+
+    }
+  }
+
   // Called from Radio Button UI
   function updateSelectedCircle() {
     const circleType = document.querySelector('input[name="selectedTargeting"]:checked').value;
@@ -360,6 +398,7 @@ limitations under the License.
     updateRectanlgeCheckbox();
     updateSmallCircleCheckbox();
     updateLargeCircleCheckbox();
+    updateThresholdCircleCheckbox();
   }
 
   function updateRectanlgeCheckbox() {
@@ -391,6 +430,14 @@ limitations under the License.
     safeRemoveCircle(globalCustomCircle);
     if (myCheckbox.checked) {
       globalCustomCircle = drawCustomCircle();
+    }
+  }
+
+  function updateThresholdCircleCheckbox() {
+    const myCheckbox = document.getElementById('thresholdCheckbox');
+    safeRemoveCircle(globalThresholdCircle);
+    if (myCheckbox.checked) {
+      globalThresholdCircle = drawThresholdCircle();
     }
   }
 
@@ -511,6 +558,16 @@ limitations under the License.
       projectParameters.colors.lightGray,
       globalMap,
       true
+    );
+  }
+
+  function drawThresholdCircle() {
+    return drawCircle(
+      globalLocationsMap[globalCodeName].thresholdCircle.center,
+      globalLocationsMap[globalCodeName].thresholdCircle.radius * 1000,
+      projectParameters.colors.lightGray,
+      globalMap,
+      false
     );
   }
 
