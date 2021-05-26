@@ -29,6 +29,13 @@ function doGet() {
    * @returns {!Object} The parsed element in json format.
    */
   function parseXml(xmlText) {
+    // Replace 0.0 coordinates by 0
+    // Polygons with 0.0 coordinates are not correctly processed
+    const re = /([^0-9])(0\.0)([^0-9])/g;
+    xmlText = xmlText.replace(re, (match, p1, p2, p3, offset, string) => {
+      return `${p1}0${p3}`
+    });
+
     const doc = XmlService.parse(xmlText);
     const result = {};
     const root = doc.getRootElement();

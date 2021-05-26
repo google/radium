@@ -273,7 +273,13 @@ limitations under the License.
   }
 
   function mapPolygonsToNameAndCoordinates(object) {
-    const placemarks = object.kml.Document.Folder.Placemark;
+    let placemarks = object.kml.Document.Folder ? object.kml.Document.Folder.Placemark : object.kml.Document.Placemark;
+
+    // If there is a single Placemark, wrap it into an array for the map logic to work
+    if (!Array.isArray(placemarks)) {
+      placemarks = [placemarks];
+    }
+
     removeUnwantedPlacemarks(placemarks, projectParameters.unwantedString);
     const resultMap = new Map(placemarks.map(placemark =>
       [placemark.name.Text.substring(0, 3), []]));
