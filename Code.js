@@ -69,3 +69,112 @@ function doGet() {
     }
     return result;
   }
+
+/**
+ * Auxiliary function to update only modified values in the final Spreadsheet
+ * It converts a list of locations (rows of the trix) into a Map of locations,
+ * where the "key" is the location name and the values are as follows:
+ *
+ *  - radius: radius of Radius Targeting settings
+ *  - lat: latitude of the center of the Radius Targeting
+ *  - lng: longitude of the center of the Radius Targeting
+ *  - location: settings using the format (distance:latitude:longitude)
+ *
+ * @param {!Array<string>} values Locations as a list of rows
+ * @returns {!Object} The map of locations.
+ */
+function listToMap(values) {
+  var valuesMap = {};
+
+  values.map( value => {
+    valuesMap[value[0]] = {
+      'radius': value[1],
+      'lat': value[2],
+      'lng': value[3],
+      'location': value[4]
+    }
+  });
+
+  return valuesMap;
+}
+
+/**
+ * Auxiliary function to update only modified values in the final Spreadsheet
+ * It converts a map of locations into a list of locations, to overwrite
+ * the rows of the final Spreadsheet
+ *
+ * @param {!Object} valuesMap The map of locations.
+ * @returns {!Array<string>} Locations as a list to be inserted in the trix
+ */
+function mapToList(valuesMap) {
+  var values = [];
+  Object.keys(valuesMap).forEach( key => {
+    var data = valuesMap[key];
+    values.push([key, data.radius, data.lat, data.lng, data.location]);
+  });
+
+  return values;
+}
+
+
+/**
+ * Update a list of location targeting settings with the new location settings
+ *
+ * @param {!Array<string>} sheetValues current location targetings to be updated
+ * @param {!Object} locationsMap New location targeting to be updated
+ * @param {!string} radiusUnit Unit for the Radius Targeting settings
+ * @returns {!Array<string>} Updated location targetings as a list of values
+ */
+function updateSheetValues(sheetValues, locationsMap, radiusUnit) {
+  // Convert location values into a map of locations,
+  // to create or update the new ones
+  let sheetValuesMap = listToMap(sheetValues);
+
+  Object.keys(locationsMap).forEach(key => {
+    const locationData = locationsMap[key];
+    const selectedCircle = locationData[locationData.selected];
+    const radius = selectedCircle.radius;
+    const lat = selectedCircle.center.lat;
+    const lng = selectedCircle.center.lng;
+
+    // Create or update location targeting settings
+    sheetValuesMap[key] = {
+      'radius': selectedCircle.radius,
+      'lat': selectedCircle.center.lat,
+      'lng': selectedCircle.center.lng,
+      'location': `(${radius}${radiusUnit}:${lat}:${lng})`
+    }
+  });
+
+  // Return location map converted into values to update the Spreadsheet
+  return mapToList(sheetValuesMap);
+}
+
+/**
+ * Export the location targeting settings into the Spreadsheet.
+ * It reads the contents of the Spreadsheet to overwrite, if existing, the
+ * desired targeting settings of the Business Targeting Areas of the KML File.
+ * The rest of the locations in the Spreadsheet will not be modified
+ *
+ * @param {!string} spreadsheetID ID of the Spreadsheet to store the targeting
+ * @param {!Object} locationsMap Locations data to be stored in the Spreadsheet
+ * @param {!string} radiusUnit Unit for the Radius Targeting settings
+ */
+function exportToSpreadsheet(spreadsheetID, locationsMap, radiusUnit) {
+  const ss = SpreadsheetApp.openById(spreadsheetID);
+  const sheet = ss.getSheetByName("Locations");
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+  let sheetValues = [];
+
+  // Get trix location values, if not empty
+  if (lastRow > 1) {
+    sheetValues = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  }
+
+  // Update current sheet values with the new location settings
+  sheetValues = updateSheetValues(sheetValues, locationsMap, radiusUnit);
+
+  const range = sheet.getRange(2, 1, sheetValues.length, sheet.getLastColumn());
+  range.setValues(sheetValues);
+}

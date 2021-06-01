@@ -46,6 +46,8 @@ limitations under the License.
       intersectionTreshold: 90,
       minRadius: 3,
     },
+    // Make a copy of this template: go/radium-config
+    spreadsheetID: "[Insert-your-spreadsheet-id]",
   };
 
   let globalCodeName;
@@ -173,6 +175,8 @@ limitations under the License.
 
   const dialogUpload = document.querySelector('#dialog-upload');
   const showDialogButtonUpload = document.querySelector('#show-dialog-upload');
+  const dialogExport = document.querySelector('#dialogExport');
+  const showDialogExportButton = document.querySelector('#showDialogExport');
 
   if (!dialogUpload.showModal) {
     dialogPolyfill.registerDialog(dialogUpload); // where's dialogPolyfil defined?
@@ -181,7 +185,16 @@ limitations under the License.
     dialogUpload.showModal();
   });
 
-  dialogUpload.querySelector('.close').addEventListener('click', () => { closeDialog(); });
+  if (!dialogExport.showModal) {
+    dialogPolyfill.registerDialog(dialogExport); // where's dialogPolyfil defined?
+  }
+  showDialogExportButton.addEventListener('click', function () {
+    populateTargetingSettingsTable();
+    dialogExport.showModal();
+  });
+
+  dialogUpload.querySelector('.close').addEventListener('click', () => { closeDialog('dialog-upload'); });
+  dialogExport.querySelector('.close').addEventListener('click', () => { closeDialog('dialogExport'); });
 
   document.getElementById('uploadKmlBtn').addEventListener('click', () => {
     document.getElementById('uploadKmlBtn').disabled = true;
@@ -201,10 +214,36 @@ limitations under the License.
     }
   });
 
+
+  function populateTargetingSettingsTable () {
+    const tableExport = document.getElementById('tableExport');
+
+    // Clean up the table to leave only the header row
+    while (tableExport.rows.length > 1) {
+      tableExport.deleteRow(-1);
+    }
+
+    // Populate the table with all targeting settings that will be exported
+    Object.keys(globalLocationsMap).forEach(key => {
+      let locationData = globalLocationsMap[key];
+      let selectedCircle = locationData[locationData.selected];
+
+      var row = tableExport.insertRow();
+      row.insertCell(0).innerHTML = key;
+      row.insertCell(1).innerHTML = selectedCircle.radius;
+      row.insertCell(2).innerHTML = selectedCircle.center.lat;
+      row.insertCell(3).innerHTML = selectedCircle.center.lng;
+    });
+
+    // Clean up text from previous executions, if needed
+    document.getElementById('exportText').innerHTML = '';
+  }
+
+
   function parseContentJsonObject(object) {
     globalPolygonsMap = mapPolygonsToNameAndCoordinates(object);
     globalCodeName = globalPolygonsMap.keys().next().value;
-    closeDialog();
+    closeDialog('dialog-upload');
 
     populateLocationsMap(globalPolygonsMap);
 
@@ -268,6 +307,19 @@ limitations under the License.
     };
   }
 
+  function exportToSpreadsheet() {
+    document.getElementById('exportText').innerHTML = '';
+    document.getElementById('exportButton').disabled = true;
+    document.getElementById('exportSpinner').classList.add('is-active');
+
+    googleScriptRun.withSuccessHandler( () => {
+      document.getElementById('exportButton').disabled = false;
+      document.getElementById('exportSpinner').classList.remove('is-active');
+      document.getElementById('exportText').innerHTML =
+        `Uploaded to <a href="https://docs.google.com/spreadsheets/d/${projectParameters.spreadsheetID}" target="_blank">this Spreadsheet</a>`
+    }).exportToSpreadsheet(projectParameters.spreadsheetID, globalLocationsMap, projectParameters.csvConfig.radiusUnit);
+  }
+
   function downloadRecommendations() {
     createCsvFileAndDownload(filename, globalLocationsMap);
   }
@@ -311,9 +363,9 @@ limitations under the License.
     return latLngCoords;
   }
 
-  function closeDialog() {
-    let dialog = document.querySelector('#dialog-upload');
-    document.getElementById('upload-spinner').classList.remove('is-active');
+  function closeDialog(elementId) {
+    let dialog = document.getElementById(elementId);
+    dialog.getElementsByClassName("mdl-spinner")[0].classList.remove('is-active');
     dialog.close();
   }
 

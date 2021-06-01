@@ -292,7 +292,40 @@ limitations under the License.
                             </div>
                           </div>
                         </div>
+                        <div class="mdl-card__menu">
+                            <dialog class="mdl-dialog" id="dialogExport">
+                                <div class="mdl-dialog__content">
+                                  <h4>Export Targeting Settings</h4>
+                                  The following targeting settings will be exported:
+                                  <table id="tableExport">
+                                    <tr>
+                                      <th class="align-left">Location</th>
+                                      <th class="align-left">Radius</th>
+                                      <th class="align-left">Latitude</th>
+                                      <th class="align-left">Longitude</th>
+                                    </tr>
+                                  </table>
+                                </div>
+                                <div class="mdl-dialog__content align-center">
+                                  <div id="exportSpinner" class="mdl-spinner mdl-js-spinner"></div>
+                                  <div id="exportText"></div>
+                                </div>
+                                <div class="mdl-dialog__actions">
+                                    <button id="exportButton" type="button" class="mdl-button" onclick="exportToSpreadsheet()">
+                                    Export
+                                    </button>
+                                    <button type="button" class="mdl-button close">
+                                    Cancel
+                                    </button>
+                                </div>
+                            </dialog>
+                        </div>
                         <div class="section align-right">
+                          <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                                id="showDialogExport"
+                                disabled >
+                            Export to Spreadsheet
+                          </button>
                           <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
                                 onclick="downloadRecommendations()"
                                 disabled >
