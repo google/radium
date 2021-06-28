@@ -109,7 +109,7 @@ limitations under the License.
                               <input type = "checkbox"
                                     id = "largeCheckbox"
                                     class = "mdl-checkbox__input"
-                                    onclick = "updateLargeCircleCheckbox()"
+                                    onclick = "updateLargeCircleCheckboxAndRedrawShape()"
                                     unchecked
                                     disabled />
                               <span class = "mdl-checkbox__label">Large Circle</span>
@@ -118,7 +118,7 @@ limitations under the License.
                               <input type = "checkbox"
                                     id = "thresholdCheckbox"
                                     class = "mdl-checkbox__input"
-                                    onclick = "updateThresholdCircleCheckbox()"
+                                    onclick = "updateThresholdCircleCheckboxAndRedrawShape()"
                                     unchecked
                                     disabled />
                               <span class = "mdl-checkbox__label">Threshold Circle</span>
@@ -127,7 +127,7 @@ limitations under the License.
                               <input type = "checkbox"
                                     id = "smallCheckbox"
                                     class = "mdl-checkbox__input"
-                                    onclick = "updateSmallCircleCheckbox()"
+                                    onclick = "updateSmallCircleCheckboxAndRedrawShape()"
                                     unchecked
                                     disabled />
                               <span class = "mdl-checkbox__label">Small Circle</span>
@@ -136,7 +136,7 @@ limitations under the License.
                               <input type = "checkbox"
                                     id = "customCheckbox"
                                     class = "mdl-checkbox__input"
-                                    onclick = "updateCustomCircleCheckbox()"
+                                    onclick = "updateCustomCircleCheckboxAndRedrawShape()"
                                     unchecked
                                     disabled />
                               <span class = "mdl-checkbox__label">Custom Circle</span>
@@ -145,7 +145,7 @@ limitations under the License.
                               <input type = "checkbox"
                                     id = "rectangleCheckbox"
                                     class = "mdl-checkbox__input"
-                                    onclick = "updateRectanlgeCheckbox()"
+                                    onclick = "updateRectanlgeCheckboxAndRedrawShape()"
                                     unchecked
                                     disabled />
                               <span class = "mdl-checkbox__label">Rectangle</span>
@@ -337,6 +337,9 @@ limitations under the License.
                 </div>
             </main>
         </div>
+        <?!= HtmlService.createHtmlOutputFromFile('FileUtils').getContent(); ?>
+        <?!= HtmlService.createHtmlOutputFromFile('ShapesUtils').getContent(); ?>
+        <?!= HtmlService.createHtmlOutputFromFile('HtmlUtils').getContent(); ?>
         <?!= HtmlService.createHtmlOutputFromFile('MasterPage').getContent(); ?>
     </body>
 </html>

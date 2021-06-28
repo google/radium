@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<script>
+   /* Checkboxes */
+  function updateCheckboxes() {
+    updateCustomCircleCheckboxAndRedrawShape();
+    updateRectanlgeCheckboxAndRedrawShape();
+    updateSmallCircleCheckboxAndRedrawShape();
+    updateLargeCircleCheckboxAndRedrawShape();
+    updateThresholdCircleCheckboxAndRedrawShape();
+  }
+
+  function updateRectanlgeCheckboxAndRedrawShape() {
+    const myCheckbox = document.getElementById('rectangleCheckbox');
+    safeRemoveRectangle(globalRectangle);
+    if (myCheckbox.checked) {
+      globalRectangle =
+        drawPolygon(
+          globalSquareCoords,
+          projectParameters.colors.lightGray,
+          globalMap
+        );
+    }
+  }
+
+  function updateSmallCircleCheckboxAndRedrawShape() {
+    const myCheckbox = document.getElementById('smallCheckbox');
+    safeRemoveCircle(globalSmallCircle);
+    if (myCheckbox.checked) {
+      globalSmallCircle = drawSmallCircle(globalSquareCoords,
+        projectParameters.colors.lightGray, globalMap);
+    }
+  }
+
+  function updateLargeCircleCheckboxAndRedrawShape() {
+    const myCheckbox = document.getElementById('largeCheckbox');
+    safeRemoveCircle(globalLargeCircle);
+    if (myCheckbox.checked) {
+      globalLargeCircle = drawLargeCircle(globalSquareCoords,
+        projectParameters.colors.lightGray, globalMap);
+    }
+  }
+
+  function updateCustomCircleCheckboxAndRedrawShape() {
+    const myCheckbox = document.getElementById('customCheckbox');
+    safeRemoveCircle(globalCustomCircle);
+    if (myCheckbox.checked) {
+      globalCustomCircle = drawCustomCircle();
+    }
+  }
+
+  function updateThresholdCircleCheckboxAndRedrawShape() {
+    const myCheckbox = document.getElementById('thresholdCheckbox');
+    safeRemoveCircle(globalThresholdCircle);
+    if (myCheckbox.checked) {
+      globalThresholdCircle = drawThresholdCircle();
+    }
+  }
+
+  /* Select aka dropdown */
+  function addMenuListItems(codenames) {
+    const cityListSelect = document.getElementById('city-list-select');
+    for (const codename of codenames) {
+      let option = document.createElement('option');
+      option.text = codename;
+      cityListSelect.add(option);
+    }
+  }
+
+  function updatedSelectedOptions(codename) {
+    globalCodeName = codename;
+    updateUI(unionOfPolygons(globalPolygonsMap.get(codename)));
+  }
+
+  function removeDisabledStatus() {
+    document.querySelectorAll('select').forEach(el => {
+      el.disabled = false;
+    });
+
+    document.querySelectorAll('input').forEach(el => {
+      el.disabled = false;
+    });
+
+    document.querySelectorAll('button').forEach(el => {
+      el.disabled = false;
+    });
+
+    document.querySelectorAll('.is-disabled').forEach(el => {
+      el.classList.remove('is-disabled');
+    });
+  }
+
+  /* Radio Buttons */
+  function updateSelectedCircleRadio() {
+    const circleType = globalLocationsMap[globalCodeName].selected;
+    document.getElementById(`${circleType}Radio`).checked = true;
+  }
+
+  // Called from Radio Button UI
+  function updateSelectedCircle() {
+    const circleType =
+      document.querySelector('input[name="selectedTargeting"]:checked').value;
+    globalLocationsMap[globalCodeName].selected = circleType;
+  }
+
+  /* Dialogs */
+  function closeDialog(elementId) {
+    let dialog = document.getElementById(elementId);
+    dialog
+      .getElementsByClassName("mdl-spinner")[0]
+      .classList
+      .remove('is-active');
+    dialog.close();
+  }
+
+  /* Slider & toogle */
+  function calculateCustomFields(radius) {
+    globalCustomRadius = radius;
+    const customCenter = globalLocationsMap[globalCodeName].customCircle.center;
+
+    let degrees = 360;
+    if (radius > 5) {
+      degrees = degrees * 2;
+    }
+
+    globalLocationsMap[globalCodeName].customCircle =
+      getCircle(radius * 1000, null, globalUnionPolygonArea, customCenter);
+
+    // Update new values for intersection, waste, etc
+    updateCircleInnerHtml("custom");
+    // Update Map's Custom Circle with new radius
+    updateCustomCircleCheckboxAndRedrawShape();
+  }
+
+  function toggleAdditionalInfo() {
+    var toggleRows = document.querySelectorAll('.toggle-info.hidden');
+
+    if (toggleRows.length) {
+      toggleRows.forEach(item => {
+        item.classList.remove('hidden');
+      });
+      document.getElementById('toggleInfoButton').innerHTML =
+        'Hide additional info';
+    } else {
+      document.querySelectorAll('.toggle-info').forEach(item => {
+        item.classList.add('hidden');
+      });
+      document.getElementById('toggleInfoButton').innerHTML =
+        'Show Additional Info';
+    }
+  }
+  /* Inner HTML Utils*/
+  function updateInnerHTML() {
+    updateGlobalBusinessInnerHTML();
+    updateAllCirclesInnerHTML();
+  }
+
+  function updateGlobalBusinessInnerHTML() {
+    const bizCenter = getCenter(globalSquareCoords);
+    document.getElementById('text_under_map_business').innerHTML =
+      globalBusinessSize.toFixed(2) + ' km<sup>2</sup>';
+    document.getElementById('circle_center_coordinates').innerHTML =
+      `lat: ${bizCenter.lat.toFixed(6)}, lng: ${bizCenter.lng.toFixed(6)}`;
+  }
+
+  function updateAllCirclesInnerHTML() {
+    const circleTypes = ['large', 'small', 'threshold', 'custom'];
+
+    for (let i = 0; i < circleTypes.length; i++) {
+      updateCircleInnerHtml(circleTypes[i]);
+    }
+  }
+
+  function updateCircleInnerHtml(circleType) {
+    let circleData = globalLocationsMap[globalCodeName][`${circleType}Circle`];
+    let radius = circleData.radius;
+    let circleSize = circleData.size;
+    let intersectionSize = circleData.intersectionSize;
+    let intersectionPercent = circleData.intersectionPercent;
+    let wasteSize = circleData.wasteSize;
+    let wastePercent = circleData.wastePercent;
+    let score = circleData.score;
+
+    document.getElementById('sliderRadius').value = radius;
+    document.getElementById(`text_under_map_${circleType}_radius`).innerHTML =
+      `${radius} km`;
+    document.getElementById(`text_under_map_${circleType}_size`).innerHTML =
+      circleSize + ' km<sup>2</sup>';
+    document.getElementById(`text_under_map_${circleType}`).innerHTML =
+      intersectionSize + ' km<sup>2</sup>';
+    document.getElementById(`text_under_map_${circleType}_percent`).innerHTML =
+      `${intersectionPercent}%`;
+    document.getElementById(`text_under_map_${circleType}_waste`).innerHTML =
+      wasteSize + ' km<sup>2</sup>';
+    document.getElementById(`text_under_map_${circleType}_waste_percent`)
+      .innerHTML = `${wastePercent}%`;
+    document.getElementById(`text_under_map_${circleType}_score`).innerHTML =
+      score;
+
+    if (circleType == 'custom') {
+      // Update Custom Radius in Slider
+      document.getElementById('radius').innerHTML = `${radius} km`;
+      document.getElementById('custom_circle_center').innerHTML =
+        `lat: ${circleData.center.lat.toFixed(6)},` +
+        ` lng: ${circleData.center.lng.toFixed(6)}`;
+    }
+  }
+</script>

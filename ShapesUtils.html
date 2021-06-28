@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<script>
+  /* Polygon Utils */
+  function drawAllPolygons(polygonsMap) {
+    let polygon;
+    for (const codename of polygonsMap.keys()) {
+      polygon = unionOfPolygons(polygonsMap.get(codename));
+      drawPolygon(
+          getJtstCoords(polygon),
+          projectParameters.colors.red,
+          globalMap
+      );
+    }
+  }
+
+  // Merge multiple polygons into one
+  function unionOfPolygons(polygonAreas) {
+    const geometryFactory = new jsts.geom.GeometryFactory();
+    let unionPolygon = createJstsPolygon(geometryFactory, polygonAreas[0]);
+    for (let i = 1; i < polygonAreas.length; i++) {
+      let jstsPolygon = createJstsPolygon(geometryFactory, polygonAreas[i]);
+      unionPolygon = unionPolygon.union(jstsPolygon);
+    }
+    return unionPolygon;
+  };
+
+  function getPolygonAreaFromJtst(map, jtstPolygon) {
+    const coords = jtstPolygon.getCoordinates().map((coord) => {
+      return {lat: coord.x, lng: coord.y};
+    });
+    return getPolygonArea(coords, projectParameters.colors.green, map);
+  }
+
+  function getJtstCoords(jtstPolygon) {
+    const coords = jtstPolygon.getCoordinates().map((coord) => {
+      return {lat: coord.x, lng: coord.y};
+    });
+    return coords;
+  }
+
+  // Intersection & Polygon
+  function getIntersectionSize(polygonAreaA, polygonAreaB) {
+    const intersection = getIntersection(polygonAreaA, polygonAreaB);
+    const intersectionPoints = convertToPoints(intersection);
+    return 10000 * d3.polygonArea(intersectionPoints);
+  }
+
+  function getIntersection(polygonAreaA, polygonAreaB) {
+    const geometryFactory = new jsts.geom.GeometryFactory();
+    const jstsPolygonA = createJstsPolygon(geometryFactory, polygonAreaA);
+    const jstsPolygonB = createJstsPolygon(geometryFactory, polygonAreaB);
+    return jstsPolygonA.intersection(jstsPolygonB);
+  }
+
+  function createJstsPolygon(geometryFactory, polygon) {
+    const path = polygon.getPath();
+    const coordinates = path.getArray().map((coord) => {
+      return new jsts.geom.Coordinate(coord.lat(), coord.lng());
+    });
+    coordinates.push(coordinates[0]);
+    const shell = geometryFactory.createLinearRing(coordinates);
+    return geometryFactory.createPolygon(shell);
+  }
+
+  function drawPolygon(coordArray, color, map) {
+    const polygonArea = getPolygonArea(coordArray, color, color);
+    polygonArea.setMap(map);
+    return polygonArea;
+  }
+
+  function getPolygonArea(paths, strokeColor, fillColor) {
+    const polygonArea = new google.maps.Polygon({
+      paths,
+      strokeColor,
+      strokeOpacity: projectParameters.polygon.strokeOpacity,
+      strokeWeight: projectParameters.polygon.strokeWeight,
+      fillColor,
+      fillOpacity: projectParameters.polygon.fillOpacity
+    });
+    return polygonArea;
+  }
+
+  function getPolygonSize(polygonArea) {
+    const points = getPolygonPoints(polygonArea);
+    const areaSize = 10000 * d3.polygonArea(points);
+    return areaSize;
+  }
+
+  function getPolygonPoints(polygonArea) {
+    const geometryFactory = new jsts.geom.GeometryFactory();
+    const jstsPolygon = createJstsPolygon(geometryFactory, polygonArea);
+    const points = convertToPoints(jstsPolygon);
+    return points;
+  }
+
+  function removePolygon(polygonArea) {
+    polygonArea.setMap(null);
+    return polygonArea;
+  }
+
+  /* Circle Utils */
+  function getCircle(radius, squareCoords, polygonArea, center = null) {
+    if (!center) {
+      center = getCenter(squareCoords);
+    }
+
+    const businessSize = getPolygonSize(polygonArea);
+
+    const circleCoords = convertCircleToPolygon(center, radius, 360 * 2);
+    const circleArea = getPolygonArea(circleCoords,
+      projectParameters.colors.lightGray,
+      projectParameters.colors.lightGray
+    );
+
+    const circleSize = + getIntersectionSize(circleArea, circleArea).toFixed(2);
+    const intersectionSize = +
+      getIntersectionSize(polygonArea, circleArea).toFixed(2);
+    const intersectionPercent = +
+      (100 * getIntersectionSize(polygonArea, circleArea) / businessSize)
+      .toFixed(2);
+    const wasteSize = +
+      (circleSize - getIntersectionSize(polygonArea, circleArea)).toFixed(2);
+    const wastePercent = +(100 * wasteSize / businessSize).toFixed(2);
+    const score = +(intersectionPercent - wastePercent).toFixed(2);
+
+    return {
+      'center': center,
+      'radius': +(radius / 1000).toFixed(1),  // radius in kms
+      'size': circleSize,
+      'intersectionPercent': intersectionPercent,
+      'intersectionSize': intersectionSize,
+      'wastePercent': wastePercent,
+      'wasteSize': wasteSize,
+      'score': score,
+    };
+  }
+
+  function getThresholdRadius(polygon) {
+    const unionPolygonArea = getPolygonAreaFromJtst(globalMap,
+      unionOfPolygons(polygon));
+    const center =
+      getCenter(getSquareCoords(getPolygonPoints(unionPolygonArea)));
+    const polygonSize = getPolygonSize(unionPolygonArea);
+    const intersectionTreshold =
+      projectParameters.csvConfig.intersectionTreshold;
+    const minRadius = projectParameters.csvConfig.minRadius;
+    const maxRadius =
+      getLargeRadius(getSquareCoords(getPolygonPoints(unionPolygonArea))) / 1000;
+
+    let thresholdRadius = 0;
+    let i = minRadius;
+
+    while (i < maxRadius) {
+      let circleArea = getPolygonArea(
+          convertCircleToPolygon(center, i * 1000, 360 * 2),
+          projectParameters.colors.lightGray,
+          projectParameters.colors.lightGray
+      );
+
+      let intersectionSize = getIntersectionSize(unionPolygonArea, circleArea);
+      let intersectionPercent =
+        (100 * intersectionSize / polygonSize).toFixed(2);
+
+      if (intersectionPercent > intersectionTreshold) {
+        thresholdRadius = i;
+        break;
+      }
+      i = parseFloat((i + 0.1).toFixed(1));
+    }
+
+    return thresholdRadius;
+  }
+
+  function convertCircleToPolygon(center, radius, num) {
+    const points = [];
+    const degreeStep = 360 / num;
+
+    for (let i = 0; i < num; i++) {
+      const gpos = google.maps.geometry.spherical.computeOffset(
+        new google.maps.LatLng(center), radius, degreeStep * i);
+      points.push({lat: gpos.lat(), lng: gpos.lng()});
+    };
+
+    points.push(points[0]);
+    return points;
+  }
+
+  function getCenter(squareCoords) {
+    const centerLat = (squareCoords[1].lat + squareCoords[3].lat) / 2;
+    const centerLng = (squareCoords[1].lng + squareCoords[3].lng) / 2
+    const center = {lat: centerLat, lng: centerLng};
+    return center;
+  }
+
+  function getLargeRadius(squareCoords) {
+    const circleCenter = getCenter(squareCoords);
+    const squarePoint =
+      new google.maps.LatLng(squareCoords[0].lat, squareCoords[0].lng);
+    const circlePoint =
+      new google.maps.LatLng(circleCenter.lat, circleCenter.lng);
+    const distance =
+      google.maps.geometry.spherical.computeDistanceBetween(
+          squarePoint, circlePoint);
+    return distance;
+  }
+
+  function getSmallRadius(squareCoords) {
+    const circleCenter = getCenter(squareCoords);
+    const squarePoint =
+      new google.maps.LatLng(circleCenter.lat, squareCoords[0].lng);
+    const circlePoint =
+      new google.maps.LatLng(circleCenter.lat, circleCenter.lng);
+    const distance =
+      google.maps.geometry.spherical.computeDistanceBetween(
+          squarePoint, circlePoint);
+    return distance;
+  }
+
+  function removeCircle(circle) {
+    circle.setMap(null);
+    return circle;
+  }
+
+  function safeRemoveCircle(globalCircleShape) {
+    if (globalCircleShape !== undefined) {
+      globalCircleShape = removeCircle(globalCircleShape);
+    }
+  }
+
+  function drawLargeCircle(coords, color, map) {
+    return
+      drawCircle(getCenter(coords), getLargeRadius(coords), color, map, false);
+  }
+
+  function drawSmallCircle(coords, color, map) {
+    return
+      drawCircle(getCenter(coords), getSmallRadius(coords), color, map, false);
+  }
+
+  function drawCustomCircle() {
+    return drawCircle(
+      globalLocationsMap[globalCodeName].customCircle.center,
+      globalCustomRadius * 1000,
+      projectParameters.colors.lightGray,
+      globalMap,
+      true
+    );
+  }
+
+  function drawThresholdCircle() {
+    return drawCircle(
+      globalLocationsMap[globalCodeName].thresholdCircle.center,
+      globalLocationsMap[globalCodeName].thresholdCircle.radius * 1000,
+      projectParameters.colors.lightGray,
+      globalMap,
+      false
+    );
+  }
+
+  function drawCircle(center, radius, color, map, draggable) {
+    const circle = new google.maps.Circle({
+      strokeColor: color,
+      strokeOpacity: projectParameters.circle.strokeOpacity,
+      strokeWeight: projectParameters.circle.strokeWeight,
+      fillColor: color,
+      fillOpacity: projectParameters.circle.fillOpacity,
+      map,
+      center,
+      radius,
+      draggable
+    });
+
+    if (draggable) {
+      google.maps.event.addListener(circle, 'dragend', function () {
+        const center = {
+          lat: this.getCenter().lat(),
+          lng: this.getCenter().lng(),
+        };
+
+        // Re-calculate Custom Circle specs
+        globalLocationsMap[globalCodeName].customCircle =
+          getCircle(radius, null, globalUnionPolygonArea, center);
+        updateCircleInnerHtml("custom");
+        // Update Map's Custom Circle with new center
+        updateCustomCircleCheckboxAndRedrawShape();
+      });
+    }
+    return circle;
+  }
+  /* Square Utils */
+  function getSquareCoords(points) {
+    let minLat = points[0][0];
+    let minLng = points[0][1];
+    let maxLat = points[0][0];
+    let maxLng = points[0][1];
+
+    for (let i = 1; i < points.length; i++) {
+      minLat = Math.min(minLat, points[i][0]);
+      maxLat = Math.max(maxLat, points[i][0]);
+      minLng = Math.min(minLng, points[i][1]);
+      maxLng = Math.max(maxLng, points[i][1]);
+    }
+    const squareCoords = [
+      { lat: minLat - 90, lng: maxLng - 180 }, // 1
+      { lat: maxLat - 90, lng: maxLng - 180 }, // 2 or NE
+      { lat: maxLat - 90, lng: minLng - 180 }, // 3
+      { lat: minLat - 90, lng: minLng - 180 }  // 4 or SW
+    ];
+    return squareCoords;
+  }
+
+  function safeRemoveRectangle(globalRectangleShape) {
+    if (globalRectangleShape !== undefined) {
+      globalRectangleShape = removePolygon(globalRectangleShape);
+    }
+  }
+  /* Coordinates Utils */
+  function parseCoordsToLatLng(coords) {
+    const latLngCoords = [];
+    const coordsSplit = coords.split(',0');
+    for (let j = 0; j < coordsSplit.length - 1; j++) {
+      const [lng, lat] = coordsSplit[j].split(",");
+      latLngCoords.push({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    }
+    return latLngCoords;
+  }
+
+  function convertToPoints(polygon) {
+    const coords = polygon.getCoordinates().map((coord) => {
+      return [coord.x + 90, coord.y + 180];
+    });
+    return coords;
+  }
+</script>
