@@ -26,8 +26,7 @@
     const myCheckbox = document.getElementById('smallCheckbox');
     safeRemoveCircle(globalSmallCircle);
     if (myCheckbox.checked) {
-      globalSmallCircle = drawSmallCircle(globalSquareCoords,
-        projectParameters.colors.lightGray, globalMap);
+      globalSmallCircle = drawSpecificCircle("small");
     }
   }
 
@@ -35,8 +34,7 @@
     const myCheckbox = document.getElementById('largeCheckbox');
     safeRemoveCircle(globalLargeCircle);
     if (myCheckbox.checked) {
-      globalLargeCircle = drawLargeCircle(globalSquareCoords,
-        projectParameters.colors.lightGray, globalMap);
+      globalLargeCircle = drawSpecificCircle("large");
     }
   }
 
@@ -44,7 +42,7 @@
     const myCheckbox = document.getElementById('customCheckbox');
     safeRemoveCircle(globalCustomCircle);
     if (myCheckbox.checked) {
-      globalCustomCircle = drawCustomCircle();
+      globalCustomCircle = drawSpecificCircle("custom");
     }
   }
 
@@ -52,7 +50,7 @@
     const myCheckbox = document.getElementById('thresholdCheckbox');
     safeRemoveCircle(globalThresholdCircle);
     if (myCheckbox.checked) {
-      globalThresholdCircle = drawThresholdCircle();
+      globalThresholdCircle = drawSpecificCircle("threshold");
     }
   }
 

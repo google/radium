@@ -227,33 +227,33 @@
     }
   }
 
-  function drawLargeCircle(coords, color, map) {
-    return
-      drawCircle(getCenter(coords), getLargeRadius(coords), color, map, false);
-  }
-
-  function drawSmallCircle(coords, color, map) {
-    return
-      drawCircle(getCenter(coords), getSmallRadius(coords), color, map, false);
-  }
-
-  function drawCustomCircle() {
+  function drawSpecificCircle(type){
+    let center, radius, draggable = false;
+    switch(type.toLowerCase()){
+      case "large":
+        center = globalLocationsMap[globalCodeName].largeCircle.center;
+        radius = globalLocationsMap[globalCodeName].largeCircle.radius * 1000;
+        break;
+      case "small":
+        center = globalLocationsMap[globalCodeName].smallCircle.center;
+        radius = globalLocationsMap[globalCodeName].smallCircle.radius * 1000;
+        break;
+      case "custom":
+        center = globalLocationsMap[globalCodeName].customCircle.center;
+        radius = globalCustomRadius * 1000;
+        draggable = true;
+        break;
+      case "threshold":
+        center = globalLocationsMap[globalCodeName].thresholdCircle.center;
+        radius = globalLocationsMap[globalCodeName].thresholdCircle.radius * 1000;
+        break;
+    }
     return drawCircle(
-      globalLocationsMap[globalCodeName].customCircle.center,
-      globalCustomRadius * 1000,
+      center,
+      radius,
       projectParameters.colors.lightGray,
       globalMap,
-      true
-    );
-  }
-
-  function drawThresholdCircle() {
-    return drawCircle(
-      globalLocationsMap[globalCodeName].thresholdCircle.center,
-      globalLocationsMap[globalCodeName].thresholdCircle.radius * 1000,
-      projectParameters.colors.lightGray,
-      globalMap,
-      false
+      draggable
     );
   }
 
