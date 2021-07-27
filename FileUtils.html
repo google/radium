@@ -153,10 +153,10 @@
 
   function parseContentJsonObject(object) {
     globalPolygonsMap = mapPolygonsToNameAndCoordinates(object);
-    globalCodeName = globalPolygonsMap.keys().next().value;
-    closeDialog('dialog-upload');
 
-    populateLocationsMap(globalPolygonsMap);
+    closeDialog('dialog-upload');
+    globalCodeName = globalPolygonsMap.keys().next().value;
+    populateLocationsMap();
 
     drawAllPolygons(globalPolygonsMap);
     addMenuListItems(globalPolygonsMap.keys());
@@ -199,40 +199,122 @@
 
   function populateLocationsMap() {
     globalPolygonsMap.forEach((polygon, key, map) => {
-      locationUnionPolygonArea =
-        getPolygonAreaFromJtst(globalMap, unionOfPolygons(polygon));
-      locationSquareCoords =
-        getSquareCoords(getPolygonPoints(locationUnionPolygonArea));
-      locationCenter = getCenter(locationSquareCoords);
+      locationUnionPolygonArea = getPolygonAreaFromJtst(
+        globalMap,
+        unionOfPolygons(polygon)
+        );
 
+      locationSquareCoords = getSquareCoords(
+        getPolygonPoints(locationUnionPolygonArea));
+      locationCenter = getCenter(locationSquareCoords);
+      let thresholdCircle = getCircle(
+        getThresholdRadius(polygon) * 1000,
+        locationSquareCoords,
+        locationUnionPolygonArea
+        );
       let location = {
         'center': locationCenter,
         'largeCircle': getCircle(
-            getLargeRadius(locationSquareCoords),
-            locationSquareCoords,
-            locationUnionPolygonArea
-        ),
+          getLargeRadius(locationSquareCoords),
+          locationSquareCoords,
+          locationUnionPolygonArea
+          ),
         'smallCircle': getCircle(
-            getSmallRadius(locationSquareCoords),
-            locationSquareCoords,
-            locationUnionPolygonArea
-        ),
+          getSmallRadius(locationSquareCoords),
+          locationSquareCoords,
+          locationUnionPolygonArea
+          ),
         'thresholdCircle': getCircle(
-            getThresholdRadius(polygon) * 1000,
-            locationSquareCoords,
-            locationUnionPolygonArea
-        ),
+          getThresholdRadius(polygon) * 1000,
+          locationSquareCoords,
+          locationUnionPolygonArea
+          ),
         'customCircle': getCircle(
-            projectParameters.customRadius * 1000,
-            locationSquareCoords,
-            locationUnionPolygonArea
-        ),
+          projectParameters.customRadius * 1000,
+          locationSquareCoords,
+          locationUnionPolygonArea
+          ),
         'selected': 'thresholdCircle',
       };
 
-      globalLocationsMap[key] = location;
+      if (location){
+        globalLocationsMap[key] = location;
+      }
     });
   }
+
+  /* Upload CSV file utils */
+  const dialogCsvUpload = document.querySelector('#dialog-csv-upload');
+  const showDialogButtonCsvUpload = document.querySelector('#show-dialog-csv-upload');
+
+  showDialogButtonCsvUpload.addEventListener('click', function () {
+    dialogCsvUpload.showModal();
+  });
+
+  dialogCsvUpload.querySelector('.close').addEventListener('click', () => {
+    closeDialog('dialog-csv-upload');
+  });
+
+  document.getElementById('uploadCsvBtn').addEventListener('click', () => {
+    document.getElementById('uploadCsvBtn').disabled = true;
+    document.getElementById('upload-spinner').classList.add('is-active');
+
+    const filesUploaded = document.getElementById('csvFileUploadBtn');
+     for(const file of filesUploaded.files) {
+       filename = file.name;
+       let reader = new FileReader();
+       reader.readAsText(file, 'UTF-8');
+       reader.onload = function(evt) {
+         const csv = evt.target.result;
+         parseCsvContent(csv);
+      }
+     }
+  });
+
+  function parseCsvContent(object){
+    const csv = Papa.parse(object);
+    globalPolygonsMap = mapCenterRadiusToNameAndCoordinates(csv);
+    closeDialog('dialog-csv-upload');
+
+    globalCodeName = globalPolygonsMap.keys().next().value;
+    try{
+      populateLocationsMap();
+    }
+    catch (error) {
+      console.error(`Error in populateLocationsMap: ${error} `);
+      removeInvalidLocations();
+    }
+
+    drawAllPolygons(globalPolygonsMap);
+    addMenuListItems(globalPolygonsMap.keys());
+
+    const unionPolygon =
+      unionOfPolygons(globalPolygonsMap.values().next().value);
+    removeDisabledStatus();
+    updateUI(unionPolygon);
+
+  }
+
+  function removeInvalidLocations(){
+    globalPolygonsMap.forEach((value, key, map) => {
+       if (!(globalLocationsMap[key])){
+        globalPolygonsMap.delete(key);
+        console.log(`Removed invalid key: ${key}`);
+      }
+    });
+  }
+
+  function mapCenterRadiusToNameAndCoordinates(object){
+      const lines = object.data;
+      const resultMap = new Map(lines.map(line => [line[3], []]));
+      lines.map(
+       line => (resultMap.get(line[3]))
+           .push(getPolygonArea(
+             convertCircleToPolygon({ lat: parseFloat(line[0]), lng: parseFloat(line[1]) }, parseFloat(line[2])*1000, 360),
+             projectParameters.colors.red,
+             projectParameters.colors.red)));
+      return resultMap;
+    }
 
   function updateUI(polygon) {
     setUpGlobalVariables(polygon);

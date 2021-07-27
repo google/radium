@@ -22,6 +22,8 @@ limitations under the License.
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-polygon/1.0.3/d3-polygon.min.js"></script>
 <script src="https://storage.googleapis.com/code.getmdl.io/1.0.0/material.min.js"></script>
 <script src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.1.1/papaparse.min.js"></script>
+
 
 <!DOCTYPE html>
 <html>
@@ -44,6 +46,10 @@ limitations under the License.
                                 id="show-dialog-upload">
                             Upload KML File
                         </button>
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                                id="show-dialog-csv-upload">
+                            Upload CSV File
+                        </button>
                         <div class="mdl-card__menu">
                             <dialog class="mdl-dialog" id="dialog-upload">
                                 <h4 class="mdl-dialog__title">
@@ -59,6 +65,29 @@ limitations under the License.
                                 <div class="mdl-dialog__actions">
                                     <input type="file" id="kmlFileUploadBtn" accept=".kml">
                                     <button id="uploadKmlBtn" type="button" class="mdl-button" enabled>
+                                    Upload
+                                    </button>
+                                    <button type="button" class="mdl-button close">
+                                    Cancel
+                                    </button>
+                                </div>
+                            </dialog>
+                        </div>
+                        <div class="mdl-card__menu">
+                            <dialog class="mdl-dialog" id="dialog-csv-upload">
+                                <h4 class="mdl-dialog__title">
+                                    Please upload .csv file
+                                </h4>
+                                <div class="mdl-dialog__content">
+                                    The .csv file size limit is 30MB
+                                    <div id="upload-spinner" class="mdl-spinner mdl-js-spinner">
+                                    </div>
+                                </div>
+                                <div class="mdl-dialog__content" id="dialog-upload-error">
+                                </div>
+                                <div class="mdl-dialog__actions">
+                                    <input type="file" id="csvFileUploadBtn" accept=".csv">
+                                    <button id="uploadCsvBtn" type="button" class="mdl-button" enabled>
                                     Upload
                                     </button>
                                     <button type="button" class="mdl-button close">
