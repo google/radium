@@ -46,11 +46,17 @@ One replication can be leveraged for multiple customers as the tool doesn’t sa
 any data it processes. It downloads a file locally that can be used directly in
 Google Ads Editor for bulk upload of the locations it generates.
 
+Delivery Area to Radius
+![Delivery Area to Radius](media/images/delivery_area_to_radius.png "Delivery Area to Radius")
+
+Stores to Radius
+![Stores to Radius](media/images/stores_to_radius.png "Stores to Radius")
+
 ### 1.3. Requirements
 * Maps JavaScript API Key
 * One of the following:
-    * KML file representing the customer's targeting areas
-    * CSV file with lat-lng, radius and name of customer's targeting areas (more oriented to physical stores)
+    * KML file representing the customer's targeting areas (See [sample](samples/sample_map.kml))
+    * CSV file with lat-lng, radius and name of customer's targeting areas (more oriented to physical stores) (See [sample](samples/sample_csv.csv))
 
 ### 1.4. Summary
 
@@ -59,6 +65,12 @@ Google Ads Editor for bulk upload of the locations it generates.
 3. Estimated time to implement the solution: If no adjustments needed, not more than 1h.
 
 ## 2. Implementation Guide
+
+<figure class="video_container">
+  <video controls="true" allowfullscreen="true">
+    <source src="media/videos/RadiumImplementationGuide.mov" type="video/mp4">
+  </video>
+</figure>
 
 ### 2.1. Deploy the Web App
 
@@ -93,6 +105,12 @@ In order to do so:
 * Update the `spreadsheetID` field in the **MasterPage.html** file
 
 ## 3. How to use the tool
+
+<figure class="video_container">
+  <video controls="true" allowfullscreen="true">
+    <source src="media/videos/RadiumDemo.mp4" type="video/mp4">
+  </video>
+</figure>
 
 ### 3.1. Create your map file
 
