@@ -178,7 +178,7 @@
     let wastePercent = circleData.wastePercent;
     let score = circleData.score;
 
-    document.getElementById('sliderRadius').value = radius;
+    document.getElementById('sliderRadius').MaterialSlider.change(radius);
     document.getElementById(`text_under_map_${circleType}_radius`).innerHTML =
       `${radius} km`;
     document.getElementById(`text_under_map_${circleType}_size`).innerHTML =
