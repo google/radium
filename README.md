@@ -200,6 +200,8 @@ Other Google Advertising products guides are coming soon.
 best.
 * [Optional] You could change the format of the csv file output to match
 different Ads Product requirements.
-* [Optional] You could change the input format of the uploaded format (i.e. csv)
-This will require a bigger change as the parsing of the given kml format won’t
-work.
+* [Optional] You could automate the entire process by [scheduling the script](https://developers.google.com/apps-script/guides/triggers/installable)
+to check a [Google Drive](https://developers.google.com/apps-script/advanced/drive) folder for new files and once it finds to process them and
+save the csv output to a [BigQuery table](https://developers.google.com/apps-script/advanced/bigquery). 
+Let us know if you have this use case and we may be able to help you out with
+development. 
