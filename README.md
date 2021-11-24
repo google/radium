@@ -79,13 +79,13 @@ Implementation Guide
 3. Paste the code from **Code.js** (in this folder) to your Code.gs file
 4. Create 6 new HTML files in the AppScripts Project:
     * Page.html
-    * MasterPage.html
+    * GlobalPage.html
     * FileUtils.html
     * HtmlUtils.html
     * ShapesUtils.html
     * Stylesheet.html
 5. Copy the code from the source files (in this folder) into each one accordingly.
-6. In **MasterPage.html**: Add the Maps JavaScript API Key. [How to obtain Maps API key](https://developers.google.com/maps/documentation/embed/get-api-key)
+6. In **GlobalPage.html**: Add the Maps JavaScript API Key. [How to obtain Maps API key](https://developers.google.com/maps/documentation/embed/get-api-key)
 7. Deploy the project as a [Web Application](https://developers.google.com/apps-script/guides/web)
      * Create a first version of the web app by pressing the button Deploy
     * Select New Deployment
@@ -101,7 +101,7 @@ You can have a persistent storage and mapping of your Business Targeting Areas' 
 
 In order to do so:
 * Make a copy of [this Spreadsheet](https://docs.google.com/spreadsheets/d/1WRLw7lepsZLca6nV6ReNJ7MHvuwXOpV0VowOFgCtgAA/edit#gid=1640428248)
-* Update the `spreadsheetID` field in the **MasterPage.html** file
+* Update the `spreadsheetID` field in the **GlobalPage.html** file
 
 ## 3. How to use the tool
 
