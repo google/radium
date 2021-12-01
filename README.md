@@ -47,10 +47,10 @@ any data it processes. It downloads a file locally that can be used directly in
 Google Ads Editor for bulk upload of the locations it generates.
 
 Delivery Area to Radius
-![Delivery Area to Radius](https://screenshot.googleplex.com/7ben9H9za8tg9uV.png "Delivery Area to Radius")
+![Delivery Area to Radius](media/images/delivery_area_to_radius.png "Delivery Area to Radius")
 
 Stores to Radius
-![Stores to Radius](https://screenshot.googleplex.com/3ucAn8Siw6r9zoo.png "Stores to Radius")
+![Stores to Radius](media/images/stores_to_radius.png "Stores to Radius")
 
 ### 1.3. Requirements
 * Maps JavaScript API Key
@@ -68,7 +68,7 @@ Stores to Radius
 
 Implementation Guide
 
-[![Implementation Guide](https://screenshot.googleplex.com/3zSDuBtfY6Vp2U8.png)](https://drive.google.com/file/d/1LYWpMDbdrrCsFKlU0zHFmrEn9pRxgjn4/view?usp=sharing "Implementation Guide")
+[![Implementation Guide](media/images/ImplementationGuideScreenshot.png)](https://www.youtube.com/watch?v=TdX9EifPln0 "Implementation Guide")
 
 
 ### 2.1. Deploy the Web App
@@ -106,7 +106,8 @@ In order to do so:
 ## 3. How to use the tool
 
 Radium Demo Video
-[![Radium Demo Video](https://screenshot.googleplex.com/8wvzdT5jEkY5uZp.png)](https://drive.google.com/file/d/1VtYYwjmzsSE0eIGisjLLpJirBiDsxRd7/view?usp=sharing "Radium Demo Video")
+[![Radium Demo Video](media/images/HowToUseRadiumScreenshot.png)](https://www.youtube.com/watch?v=lqigxOS2ReQ "Radium Demo Video")
+
 
 ### 3.1. Create your map file
 
