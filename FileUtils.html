@@ -78,18 +78,6 @@ limitations under the License.
     filenameParts.pop();
     return filenameParts.join('.');
   }
-  /* Export Spreadsheet Utils */
-  const dialogExport = document.querySelector('#dialogExport');
-  const showDialogExportButton = document.querySelector('#showDialogExport');
-
-  showDialogExportButton.addEventListener('click', function () {
-    populateTargetingSettingsTable();
-    dialogExport.showModal();
-  });
-
-  dialogExport.querySelector('.close').addEventListener('click', () => {
-    closeDialog('dialogExport');
-  });
 
   function populateTargetingSettingsTable() {
     const tableExport = document.getElementById('tableExport');
@@ -134,40 +122,20 @@ limitations under the License.
     .exportToSpreadsheet(projectParameters.spreadsheetID, globalLocationsMap,
         projectParameters.csvConfig.radiusUnit);
   }
-  /* Upload KML file utils */
-  const dialogUpload = document.querySelector('#dialog-upload');
-  const showDialogButtonUpload = document.querySelector('#show-dialog-upload');
-
-  showDialogButtonUpload.addEventListener('click', function () {
-    dialogUpload.showModal();
-  });
-
-  dialogUpload.querySelector('.close').addEventListener('click', () => {
-    closeDialog('dialog-upload');
-  });
-
-  document.getElementById('uploadKmlBtn').addEventListener('click', () => {
-    document.getElementById('uploadKmlBtn').disabled = true;
-    document.getElementById('upload-spinner').classList.add('is-active');
-
-    const filesUploaded = document.getElementById('kmlFileUploadBtn');
-    for (const file of filesUploaded.files) {
-      filename = file.name;
-      let reader = new FileReader();
-      reader.readAsText(file, 'UTF-8');
-      reader.onload = function (evt) {
-        const xml = evt.target.result;
-        googleScriptRun
-          .withSuccessHandler(parseContentJsonObject).parseXml(xml)
-          .withFailureHandler(
-            (error) => alert(`Error occured: ${error.message}`)
-          );
-      }
-    }
-  });
 
   function parseContentJsonObject(object) {
-    globalPolygonsMap = mapPolygonsToNameAndCoordinates(object);
+    try {
+      globalPolygonsMap = mapPolygonsToNameAndCoordinates(object);
+    } catch (error) {
+      document.getElementById('uploadKmlBtn').disabled = false;
+      document.getElementById('upload-spinner').classList.remove('is-active');
+      document.getElementById('dialog-upload-error').innerHTML =
+       `KML file without the correct format. Please check following ` +
+       `<a target="_blank"` +
+       `href="https://github.com/google/radium/blob/main/samples/sample_map.kml">`+
+       `sample</a> for details`;
+      return;
+    }
 
     closeDialog('dialog-upload');
     globalCodeName = globalPolygonsMap.keys().next().value;
@@ -258,34 +226,6 @@ limitations under the License.
     });
   }
 
-  /* Upload CSV file utils */
-  const dialogCsvUpload = document.querySelector('#dialog-csv-upload');
-  const showDialogButtonCsvUpload = document.querySelector('#show-dialog-csv-upload');
-
-  showDialogButtonCsvUpload.addEventListener('click', function () {
-    dialogCsvUpload.showModal();
-  });
-
-  dialogCsvUpload.querySelector('.close').addEventListener('click', () => {
-    closeDialog('dialog-csv-upload');
-  });
-
-  document.getElementById('uploadCsvBtn').addEventListener('click', () => {
-    document.getElementById('uploadCsvBtn').disabled = true;
-    document.getElementById('upload-spinner').classList.add('is-active');
-
-    const filesUploaded = document.getElementById('csvFileUploadBtn');
-     for(const file of filesUploaded.files) {
-       filename = file.name;
-       let reader = new FileReader();
-       reader.readAsText(file, 'UTF-8');
-       reader.onload = function(evt) {
-         const csv = evt.target.result;
-         parseCsvContent(csv);
-      }
-     }
-  });
-
   function parseCsvContent(object){
     const csv = Papa.parse(object);
     globalPolygonsMap = mapCenterRadiusToNameAndCoordinates(csv);
@@ -346,4 +286,79 @@ limitations under the License.
     globalMap.setCenter(globalCenter);
     globalBusinessSize = getPolygonSize(globalUnionPolygonArea);
   }
+
+  /* Upload KML file utils */
+  const dialogUpload = document.querySelector('#dialog-upload');
+  const showDialogButtonUpload = document.querySelector('#show-dialog-upload');
+
+  showDialogButtonUpload.addEventListener('click', function () {
+    dialogUpload.showModal();
+  });
+
+  dialogUpload.querySelector('.close').addEventListener('click', () => {
+    closeDialog('dialog-upload');
+  });
+
+  document.getElementById('uploadKmlBtn').addEventListener('click', () => {
+    document.getElementById('uploadKmlBtn').disabled = true;
+    document.getElementById('upload-spinner').classList.add('is-active');
+    document.getElementById('dialog-upload-error').innerHTML = '';
+
+    const filesUploaded = document.getElementById('kmlFileUploadBtn');
+    for (const file of filesUploaded.files) {
+      filename = file.name;
+      let reader = new FileReader();
+      reader.readAsText(file, 'UTF-8');
+      reader.onload = function (evt) {
+        const xml = evt.target.result;
+        googleScriptRun
+          .withSuccessHandler(parseContentJsonObject).parseXml(xml)
+          .withFailureHandler(
+            (error) => alert(`Error occured: ${error.message}`)
+          );
+      }
+    }
+  });
+
+  /* Upload CSV file utils */
+  const dialogCsvUpload = document.querySelector('#dialog-csv-upload');
+  const showDialogButtonCsvUpload = document.querySelector('#show-dialog-csv-upload');
+
+  showDialogButtonCsvUpload.addEventListener('click', function () {
+    dialogCsvUpload.showModal();
+  });
+
+  dialogCsvUpload.querySelector('.close').addEventListener('click', () => {
+    closeDialog('dialog-csv-upload');
+  });
+
+  document.getElementById('uploadCsvBtn').addEventListener('click', () => {
+    document.getElementById('uploadCsvBtn').disabled = true;
+    document.getElementById('upload-spinner').classList.add('is-active');
+    document.getElementById('dialog-upload-error').innerHTML = '';
+
+    const filesUploaded = document.getElementById('csvFileUploadBtn');
+     for(const file of filesUploaded.files) {
+       filename = file.name;
+       let reader = new FileReader();
+       reader.readAsText(file, 'UTF-8');
+       reader.onload = function(evt) {
+         const csv = evt.target.result;
+         parseCsvContent(csv);
+      }
+     }
+  });
+
+  /* Export Spreadsheet Utils */
+  const dialogExport = document.querySelector('#dialogExport');
+  const showDialogExportButton = document.querySelector('#showDialogExport');
+
+  showDialogExportButton.addEventListener('click', function () {
+    populateTargetingSettingsTable();
+    dialogExport.showModal();
+  });
+
+  dialogExport.querySelector('.close').addEventListener('click', () => {
+    closeDialog('dialogExport');
+  });
 </script>
