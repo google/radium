@@ -97,7 +97,7 @@ limitations under the License.
 
   function getPolygonSize(polygonArea) {
     const points = getPolygonPoints(polygonArea);
-    const areaSize = 10000 * d3.polygonArea(points);
+    const areaSize = Math.abs(10000 * d3.polygonArea(points));
     return areaSize;
   }
 
@@ -330,9 +330,22 @@ limitations under the License.
     }
   }
   /* Coordinates Utils */
+
+  /**
+   * Parses a string containing all points' coordinates of a polygon into a
+   * list of {lat,lng} objects.
+   *
+   * A point is represented by its coordinates: a latitude, a longitude and
+   * an optional altitude value, which for plain maps is 0 if present.
+   *
+   * @param String coords
+   * @return {!Array<Object>} A list of {lat,lng} objects
+   */
   function parseCoordsToLatLng(coords) {
     const latLngCoords = [];
-    const coordsSplit = coords.split(',0');
+    // Split points' coordinates and store lat, lng values
+    const coordsSplit =
+      coords.split(',0').length > 1 ? coords.split(',0') : coords.split(' ');
     for (let j = 0; j < coordsSplit.length - 1; j++) {
       const [lng, lat] = coordsSplit[j].split(",");
       latLngCoords.push({ lat: parseFloat(lat), lng: parseFloat(lng) });
