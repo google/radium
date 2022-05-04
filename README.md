@@ -100,7 +100,7 @@ That's it, your web app is now deployed and you can use as in the next step!
 You can have a persistent storage and mapping of your Business Targeting Areas' readable name to their location targeting settings to be used in Google Ads by exporting your Targeting Settings to a Google SpreadSheet.
 
 In order to do so:
-* Make a copy of [this Spreadsheet](https://docs.google.com/spreadsheets/d/1WRLw7lepsZLca6nV6ReNJ7MHvuwXOpV0VowOFgCtgAA/edit#gid=1640428248)
+* Make a copy of [this Spreadsheet](https://docs.google.com/spreadsheets/d/1yLLgjJkvATAII_jJdAP4cIfqULB1dp99BPCl7zQvC9Q/edit?usp=sharing&resourcekey=0-boJqFBywVR5zYUdTUSOqvw)
 * Update the `spreadsheetID` field in the **GlobalPage.html** file
 
 ## 3. How to use the tool
